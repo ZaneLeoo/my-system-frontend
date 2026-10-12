@@ -1,5 +1,13 @@
 <template>
-  <el-drawer title="用户信息详情" v-model="visible" direction="rtl" size="68%" append-to-body :before-close="handleClose" class="detail-drawer">
+  <el-drawer
+    title="用户信息详情"
+    v-model="visible"
+    direction="rtl"
+    size="68%"
+    append-to-body
+    :before-close="handleClose"
+    class="detail-drawer"
+  >
     <div v-loading="loading" class="drawer-content">
       <!-- 基本信息 -->
       <h4 class="section-header">基本信息</h4>
@@ -13,7 +21,7 @@
         <el-col :span="12">
           <div class="info-item">
             <label class="info-label">归属部门：</label>
-            <span class="info-value plaintext">{{ (info.dept && info.dept.deptName) }}</span>
+            <span class="info-value plaintext">{{ info.dept && info.dept.deptName }}</span>
           </div>
         </el-col>
       </el-row>
@@ -42,7 +50,9 @@
           <div class="info-item">
             <label class="info-label">用户状态：</label>
             <span class="info-value plaintext">
-              <el-tag size="small" :type="info.status === '0' ? 'success' : 'danger'">{{ info.status === '0' ? '正常' : '停用' }}</el-tag>
+              <el-tag size="small" :type="info.status === '0' ? 'success' : 'danger'">
+                {{ info.status === '0' ? '正常' : '停用' }}
+              </el-tag>
             </span>
           </div>
         </el-col>
@@ -137,18 +147,28 @@ const info = reactive<SysUser>({})
 const postOptions = ref<SysPost[]>([])
 const roleOptions = ref<SysRole[]>([])
 
-const { sys_user_sex } = useDict("sys_user_sex")
+const { sys_user_sex } = useDict('sys_user_sex')
 
 const sexLabel = computed(() => selectDictLabel(sys_user_sex.value, info.sex) || '-')
 
 const postNames = computed<string>(() => {
   if (!postOptions.value.length || !info.postIds) return ''
-  return postOptions.value.filter((p: SysPost) => info.postIds?.includes(p.postId)).map((p: SysPost) => p.postName).join('、') || ''
+  return (
+    postOptions.value
+      .filter((p: SysPost) => info.postIds?.includes(p.postId))
+      .map((p: SysPost) => p.postName)
+      .join('、') || ''
+  )
 })
 
 const roleNames = computed<string>(() => {
   if (!roleOptions.value.length || !info.roleIds) return ''
-  return roleOptions.value.filter((r: SysRole) => info.roleIds?.includes(r.roleId)).map((r: SysRole) => r.roleName).join('、') || ''
+  return (
+    roleOptions.value
+      .filter((r: SysRole) => info.roleIds?.includes(r.roleId))
+      .map((r: SysRole) => r.roleName)
+      .join('、') || ''
+  )
 })
 
 const open = async (userId: number): Promise<void> => {

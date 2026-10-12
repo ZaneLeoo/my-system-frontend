@@ -17,8 +17,8 @@
 </template>
 
 <script setup lang="ts">
-import { usePasswordRule } from "@/utils/passwordRule"
-import { updateUserPwd } from "@/api/system/user"
+import { usePasswordRule } from '@/utils/passwordRule'
+import { updateUserPwd } from '@/api/system/user'
 
 const { proxy } = getCurrentInstance()
 const { infoPwdValidator } = usePasswordRule()
@@ -40,15 +40,18 @@ const user = reactive<UserProfilePwd>({
 
 const equalToPassword = (rule: any, value: string, callback: (error?: Error) => void): void => {
   if (user.newPassword !== value) {
-    callback(new Error("两次输入的密码不一致"))
+    callback(new Error('两次输入的密码不一致'))
   } else {
     callback()
   }
 }
 
 const rules = {
-  oldPassword: [{ required: true, message: "旧密码不能为空", trigger: "blur" }],
-  confirmPassword: [{ required: true, message: "确认密码不能为空", trigger: "blur" }, { required: true, validator: equalToPassword, trigger: "blur" }]
+  oldPassword: [{ required: true, message: '旧密码不能为空', trigger: 'blur' }],
+  confirmPassword: [
+    { required: true, message: '确认密码不能为空', trigger: 'blur' },
+    { required: true, validator: equalToPassword, trigger: 'blur' }
+  ]
 }
 
 /** 提交按钮 */
@@ -56,7 +59,7 @@ function submit() {
   proxy.$refs.pwdRef.validate((valid: boolean) => {
     if (valid) {
       updateUserPwd(user.oldPassword!, user.newPassword!).then(() => {
-        proxy.$modal.msgSuccess("修改成功")
+        proxy.$modal.msgSuccess('修改成功')
       })
     }
   })

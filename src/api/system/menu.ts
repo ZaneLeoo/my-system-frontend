@@ -1,5 +1,12 @@
 import request from '@/utils/request'
-import type { MenuQueryParams, SysMenu, MenuSortParams, TreeSelect, AjaxResult, RoleMenuTreeselectResult } from '@/types'
+import type {
+  MenuQueryParams,
+  SysMenu,
+  MenuSortParams,
+  TreeSelect,
+  AjaxResult,
+  RoleMenuTreeselectResult
+} from '@/types'
 
 // 查询菜单列表
 export function listMenu(query?: MenuQueryParams): Promise<AjaxResult<SysMenu[]>> {

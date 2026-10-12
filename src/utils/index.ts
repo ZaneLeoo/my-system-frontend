@@ -4,13 +4,13 @@ import { parseTime } from './ruoyi'
  * 表格时间格式化
  */
 export function formatDate(cellValue: any): string {
-  if (cellValue == null || cellValue == "") return ""
-  const date = new Date(cellValue) 
+  if (cellValue == null || cellValue == '') return ''
+  const date = new Date(cellValue)
   const year = date.getFullYear()
   const month = date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1
-  const day = date.getDate() < 10 ? '0' + date.getDate() : date.getDate() 
-  const hours = date.getHours() < 10 ? '0' + date.getHours() : date.getHours() 
-  const minutes = date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes() 
+  const day = date.getDate() < 10 ? '0' + date.getDate() : date.getDate()
+  const hours = date.getHours() < 10 ? '0' + date.getHours() : date.getHours()
+  const minutes = date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes()
   const seconds = date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds()
   return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds
 }
@@ -44,17 +44,7 @@ export function formatTime(time: number | string, option?: string): string {
   if (option) {
     return parseTime(time, option) || ''
   } else {
-    return (
-      d.getMonth() +
-      1 +
-      '月' +
-      d.getDate() +
-      '日' +
-      d.getHours() +
-      '时' +
-      d.getMinutes() +
-      '分'
-    )
+    return d.getMonth() + 1 + '月' + d.getDate() + '日' + d.getHours() + '时' + d.getMinutes() + '分'
   }
 }
 
@@ -88,7 +78,7 @@ export function byteLength(str: string): number {
     const code = str.charCodeAt(i)
     if (code > 0x7f && code <= 0x7ff) s++
     else if (code > 0x7ff && code <= 0xffff) s += 2
-    if (code >= 0xDC00 && code <= 0xDFFF) i--
+    if (code >= 0xdc00 && code <= 0xdfff) i--
   }
   return s
 }
@@ -114,7 +104,7 @@ export function cleanArray(actual: any[]): any[] {
 export function param(json: Record<string, any>): string {
   if (!json) return ''
   return cleanArray(
-    Object.keys(json).map(key => {
+    Object.keys(json).map((key) => {
       if (json[key] === undefined) return ''
       return encodeURIComponent(key) + '=' + encodeURIComponent(json[key])
     })
@@ -132,7 +122,7 @@ export function param2Obj(url: string): Record<string, string> {
   }
   const obj: Record<string, string> = {}
   const searchArr = search.split('&')
-  searchArr.forEach(v => {
+  searchArr.forEach((v) => {
     const index = v.indexOf('=')
     if (index !== -1) {
       const name = v.substring(0, index)
@@ -166,7 +156,7 @@ export function objectMerge(target: any, source: any): any {
   if (Array.isArray(source)) {
     return source.slice()
   }
-  Object.keys(source).forEach(property => {
+  Object.keys(source).forEach((property) => {
     const sourceProperty = source[property]
     if (typeof sourceProperty === 'object') {
       target[property] = objectMerge(target[property], sourceProperty)
@@ -190,9 +180,7 @@ export function toggleClass(element: HTMLElement, className: string): void {
   if (nameIndex === -1) {
     classString += ' ' + className
   } else {
-    classString =
-      classString.substr(0, nameIndex) +
-      classString.substr(nameIndex + className.length)
+    classString = classString.substr(0, nameIndex) + classString.substr(nameIndex + className.length)
   }
   element.className = classString
 }
@@ -221,11 +209,11 @@ export function deepClone<T>(source: T): T {
     throw new Error('error arguments')
   }
   const targetObj = (source as any).constructor === Array ? [] : {}
-  Object.keys(source as any).forEach(keys => {
+  Object.keys(source as any).forEach((keys) => {
     if ((source as any)[keys] && typeof (source as any)[keys] === 'object') {
-      (targetObj as any)[keys] = deepClone((source as any)[keys])
+      ;(targetObj as any)[keys] = deepClone((source as any)[keys])
     } else {
-      (targetObj as any)[keys] = (source as any)[keys]
+      ;(targetObj as any)[keys] = (source as any)[keys]
     }
   })
   return targetObj as T
@@ -285,11 +273,9 @@ export function makeMap(str: string, expectsLowerCase?: boolean): (val: string) 
   for (let i = 0; i < list.length; i++) {
     map[list[i]] = true
   }
-  return expectsLowerCase
-    ? (val: string) => map[val.toLowerCase()]
-    : (val: string) => map[val]
+  return expectsLowerCase ? (val: string) => map[val.toLowerCase()] : (val: string) => map[val]
 }
- 
+
 export const exportDefault = 'export default '
 
 export const beautifierConf = {
@@ -300,7 +286,7 @@ export const beautifierConf = {
     preserve_newlines: false,
     keep_array_indentation: false,
     break_chained_methods: false,
-    indent_scripts: 'separate',
+    indent_scripts: 'separate' as const,
     brace_style: 'end-expand',
     space_before_conditional: true,
     unescape_strings: false,
@@ -319,7 +305,7 @@ export const beautifierConf = {
     preserve_newlines: false,
     keep_array_indentation: false,
     break_chained_methods: false,
-    indent_scripts: 'normal',
+    indent_scripts: 'normal' as const,
     brace_style: 'end-expand',
     space_before_conditional: true,
     unescape_strings: false,
@@ -335,12 +321,12 @@ export const beautifierConf = {
 
 // 首字母大小
 export function titleCase(str: string): string {
-  return str.replace(/( |^)[a-z]/g, L => L.toUpperCase())
+  return str.replace(/( |^)[a-z]/g, (L) => L.toUpperCase())
 }
 
 // 下划转驼峰
 export function camelCase(str: string): string {
-  return str.replace(/_[a-z]/g, str1 => str1.substr(-1).toUpperCase())
+  return str.replace(/_[a-z]/g, (str1) => str1.substr(-1).toUpperCase())
 }
 
 export function isNumberStr(str: string): boolean {

@@ -26,7 +26,7 @@ import elementIcons from '@/components/SvgIcon/svgicon'
 import './permission' // permission control
 
 import { useDict } from '@/utils/dict'
-import { getConfigKey } from "@/api/system/config"
+import { getConfigKey } from '@/api/system/config'
 import { parseTime, resetForm, addDateRange, handleTree, selectDictLabel, selectDictLabels } from '@/utils/ruoyi'
 
 // 分页组件
@@ -34,13 +34,13 @@ import Pagination from '@/components/Pagination/index.vue'
 // 自定义表格工具组件
 import RightToolbar from '@/components/RightToolbar/index.vue'
 // 富文本组件
-import Editor from "@/components/Editor/index.vue"
+import Editor from '@/components/Editor/index.vue'
 // 文件上传组件
-import FileUpload from "@/components/FileUpload/index.vue"
+import FileUpload from '@/components/FileUpload/index.vue'
 // 图片上传组件
-import ImageUpload from "@/components/ImageUpload/index.vue"
+import ImageUpload from '@/components/ImageUpload/index.vue'
 // 图片预览组件
-import ImagePreview from "@/components/ImagePreview/index.vue"
+import ImagePreview from '@/components/ImagePreview/index.vue'
 // 字典标签组件
 import DictTag from '@/components/DictTag/index.vue'
 

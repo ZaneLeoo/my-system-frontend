@@ -31,7 +31,7 @@ export function hexToRgb(str: string): number[] {
   for (let i = 0; i < 3; i++) {
     hexs[i] = String(parseInt(hexs[i], 16))
   }
-  return hexs.map(h => parseInt(h))
+  return hexs.map((h) => parseInt(h))
 }
 
 // rgb颜色转Hex颜色

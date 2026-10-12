@@ -9,7 +9,7 @@ export function checkPermi(value: string[]): boolean {
   if (value && value instanceof Array && value.length > 0) {
     const permissions = useUserStore().permissions
     const permissionDatas = value
-    const all_permission = "*:*:*"
+    const all_permission = '*:*:*'
 
     const hasPermission = permissions.some((permission: string) => {
       return all_permission === permission || permissionDatas.includes(permission)
@@ -34,7 +34,7 @@ export function checkRole(value: string[]): boolean {
   if (value && value instanceof Array && value.length > 0) {
     const roles = useUserStore().roles
     const permissionRoles = value
-    const super_admin = "admin"
+    const super_admin = 'admin'
 
     const hasRole = roles.some((role: string) => {
       return super_admin === role || permissionRoles.includes(role)

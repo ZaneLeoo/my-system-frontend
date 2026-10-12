@@ -18,13 +18,15 @@ export default {
         }
       })
     }
-    return useTagsViewStore().delCachedView(obj).then(() => {
-      const { path, query } = obj
-      router.replace({
-        path: '/redirect' + path,
-        query: query
+    return useTagsViewStore()
+      .delCachedView(obj)
+      .then(() => {
+        const { path, query } = obj
+        router.replace({
+          path: '/redirect' + path,
+          query: query
+        })
       })
-    })
   },
   // 关闭当前tab页签，打开新页签
   closeOpenPage(obj?: any) {
@@ -36,13 +38,15 @@ export default {
   // 关闭指定tab页签
   closePage(obj?: any) {
     if (obj === undefined) {
-      return useTagsViewStore().delView(router.currentRoute.value).then(({ visitedViews }: { visitedViews: any[] }) => {
-        const latestView = visitedViews.slice(-1)[0]
-        if (latestView) {
-          return router.push(latestView.fullPath)
-        }
-        return router.push('/')
-      })
+      return useTagsViewStore()
+        .delView(router.currentRoute.value)
+        .then(({ visitedViews }: { visitedViews: any[] }) => {
+          const latestView = visitedViews.slice(-1)[0]
+          if (latestView) {
+            return router.push(latestView.fullPath)
+          }
+          return router.push('/')
+        })
     }
     return useTagsViewStore().delView(obj)
   },

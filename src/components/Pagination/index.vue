@@ -1,5 +1,5 @@
 <template>
-  <div :class="{ 'hidden': hidden }" class="pagination-container">
+  <div :class="{ hidden: hidden }" class="pagination-container">
     <el-pagination
       :background="background"
       v-model:current-page="currentPage"
@@ -59,7 +59,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits()
+const emit = defineEmits(['update:page', 'update:limit', 'pagination'])
 const currentPage = computed({
   get() {
     return props.page
@@ -72,7 +72,7 @@ const pageSize = computed({
   get() {
     return props.limit
   },
-  set(val: number){
+  set(val: number) {
     emit('update:limit', val)
   }
 })

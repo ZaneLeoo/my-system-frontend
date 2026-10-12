@@ -85,4 +85,3 @@ export function synchDb(tableName: string): Promise<AjaxResult> {
     method: 'get'
   })
 }
-

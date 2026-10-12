@@ -19,14 +19,16 @@ export interface UserInfoResult extends AjaxResult {
   isDefaultModifyPwd?: boolean
   /** 密码是否过期 */
   isPasswordExpired?: boolean
+  /** 密码允许的字符类型 */
+  pwdChrtype?: string
 }
 
 /** 验证码响应 */
 export interface CaptchaInfoResult extends AjaxResult {
   /** 验证码缓存key */
-  uuid: string;
+  uuid: string
   /** 验证码图片Base64 */
-  img: string;
+  img: string
   /** 验证码开关 */
   captchaEnabled: boolean
 }

@@ -7,7 +7,7 @@ interface CacheInterface {
 }
 
 const sessionCache: CacheInterface = {
-  set (key: string, value: string) {
+  set(key: string, value: string) {
     if (!sessionStorage) {
       return
     }
@@ -15,7 +15,7 @@ const sessionCache: CacheInterface = {
       sessionStorage.setItem(key, value)
     }
   },
-  get (key: string): string | null {
+  get(key: string): string | null {
     if (!sessionStorage) {
       return null
     }
@@ -24,25 +24,25 @@ const sessionCache: CacheInterface = {
     }
     return sessionStorage.getItem(key)
   },
-  setJSON (key: string, jsonValue: any) {
+  setJSON(key: string, jsonValue: any) {
     if (jsonValue != null) {
       this.set(key, JSON.stringify(jsonValue))
     }
   },
-  getJSON (key: string): any {
+  getJSON(key: string): any {
     const value = this.get(key)
     if (value != null) {
       return JSON.parse(value)
     }
     return null
   },
-  remove (key: string) {
+  remove(key: string) {
     sessionStorage.removeItem(key)
   }
 }
 
 const localCache: CacheInterface = {
-  set (key: string, value: string) {
+  set(key: string, value: string) {
     if (!localStorage) {
       return
     }
@@ -50,7 +50,7 @@ const localCache: CacheInterface = {
       localStorage.setItem(key, value)
     }
   },
-  get (key: string): string | null {
+  get(key: string): string | null {
     if (!localStorage) {
       return null
     }
@@ -59,19 +59,19 @@ const localCache: CacheInterface = {
     }
     return localStorage.getItem(key)
   },
-  setJSON (key: string, jsonValue: any) {
+  setJSON(key: string, jsonValue: any) {
     if (jsonValue != null) {
       this.set(key, JSON.stringify(jsonValue))
     }
   },
-  getJSON (key: string): any {
+  getJSON(key: string): any {
     const value = this.get(key)
     if (value != null) {
       return JSON.parse(value)
     }
     return null
   },
-  remove (key: string) {
+  remove(key: string) {
     localStorage.removeItem(key)
   }
 }

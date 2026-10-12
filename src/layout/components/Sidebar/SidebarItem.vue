@@ -1,10 +1,18 @@
 <template>
   <div v-if="!item.hidden">
-    <template v-if="hasOneShowingChild(item.children, item) && (!onlyOneChild.children || onlyOneChild.noShowingChildren) && !item.alwaysShow">
+    <template
+      v-if="
+        hasOneShowingChild(item.children, item) &&
+        (!onlyOneChild.children || onlyOneChild.noShowingChildren) &&
+        !item.alwaysShow
+      "
+    >
       <app-link v-if="onlyOneChild.meta" :to="resolvePath(onlyOneChild.path, onlyOneChild.query)">
         <el-menu-item :index="resolvePath(onlyOneChild.path)" :class="{ 'submenu-title-noDropdown': !isNest }">
-          <svg-icon :icon-class="onlyOneChild.meta.icon || (item.meta && item.meta.icon)"/>
-          <template #title><span class="menu-title" :title="hasTitle(onlyOneChild.meta.title)">{{ onlyOneChild.meta.title }}</span></template>
+          <svg-icon :icon-class="onlyOneChild.meta.icon || (item.meta && item.meta.icon)" />
+          <template #title>
+            <span class="menu-title" :title="hasTitle(onlyOneChild.meta.title)">{{ onlyOneChild.meta.title }}</span>
+          </template>
         </el-menu-item>
       </app-link>
     </template>
@@ -54,7 +62,7 @@ function hasOneShowingChild(children: any[] = [], parent: any) {
   if (!children) {
     children = []
   }
-  const showingChildren = children.filter(item => {
+  const showingChildren = children.filter((item) => {
     if (item.hidden) {
       return false
     }
@@ -94,7 +102,7 @@ function hasTitle(title: string): string {
   if (title.length > 5) {
     return title
   } else {
-    return ""
+    return ''
   }
 }
 </script>

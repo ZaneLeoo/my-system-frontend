@@ -15,20 +15,20 @@
 </template>
 
 <script setup lang="ts">
-import { isExternal } from "@/utils/validate"
+import { isExternal } from '@/utils/validate'
 
 const props = defineProps({
   src: {
     type: String,
-    default: ""
+    default: ''
   },
   width: {
     type: [Number, String],
-    default: ""
+    default: ''
   },
   height: {
     type: [Number, String],
-    default: ""
+    default: ''
   }
 })
 
@@ -36,7 +36,7 @@ const realSrc = computed(() => {
   if (!props.src) {
     return undefined
   }
-  const real_src = props.src.split(",")[0]
+  const real_src = props.src.split(',')[0]
   if (isExternal(real_src)) {
     return real_src
   }
@@ -47,7 +47,7 @@ const realSrcList = computed(() => {
   if (!props.src) {
     return undefined
   }
-  const real_src_list = props.src.split(",")
+  const real_src_list = props.src.split(',')
   const srcList: string[] = []
   real_src_list.forEach((item: string) => {
     if (isExternal(item)) {
@@ -59,13 +59,9 @@ const realSrcList = computed(() => {
   return srcList
 })
 
-const realWidth = computed(() =>
-  typeof props.width == "string" ? props.width : `${props.width}px`
-)
+const realWidth = computed(() => (typeof props.width == 'string' ? props.width : `${props.width}px`))
 
-const realHeight = computed(() =>
-  typeof props.height == "string" ? props.height : `${props.height}px`
-)
+const realHeight = computed(() => (typeof props.height == 'string' ? props.height : `${props.height}px`))
 </script>
 
 <style lang="scss" scoped>

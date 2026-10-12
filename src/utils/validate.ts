@@ -6,7 +6,7 @@
  */
 export function isPathMatch(pattern: string, path: string): boolean {
   const regexPattern = pattern
-    .replace(/([.+^${}()|\[\]\\])/g, '\\$1')
+    .replace(/([.+^${}()|[\]\\])/g, '\\$1')
     .replace(/\*\*/g, '__DOUBLE_STAR__')
     .replace(/\*/g, '[^/]*')
     .replace(/__DOUBLE_STAR__/g, '.*')
@@ -16,19 +16,19 @@ export function isPathMatch(pattern: string, path: string): boolean {
 }
 
 /**
- * 判断value字符串是否为空 
+ * 判断value字符串是否为空
  * @param value
  * @returns {Boolean}
  */
 export function isEmpty(value: any): boolean {
-  if (value == null || value == "" || value == undefined || value == "undefined") {
+  if (value == null || value == '' || value == undefined || value == 'undefined') {
     return true
   }
   return false
 }
 
 /**
- * 判断url是否是http或https 
+ * 判断url是否是http或https
  * @param url
  * @returns {Boolean}
  */
@@ -59,7 +59,8 @@ export function validUsername(str: string): boolean {
  * @returns {Boolean}
  */
 export function validURL(url: string): boolean {
-  const reg = /^(https?|ftp):\/\/([a-zA-Z0-9.-]+(:[a-zA-Z0-9.&%$-]+)*@)*((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|([a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+\.(com|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|[a-zA-Z]{2}))(:[0-9]+)*(\/($|[a-zA-Z0-9.,?'\\+&%$#=~_-]+))*$/
+  const reg =
+    /^(https?|ftp):\/\/([a-zA-Z0-9.-]+(:[a-zA-Z0-9.&%$-]+)*@)*((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|([a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+\.(com|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|[a-zA-Z]{2}))(:[0-9]+)*(\/($|[a-zA-Z0-9.,?'\\+&%$#=~_-]+))*$/
   return reg.test(url)
 }
 
@@ -95,7 +96,8 @@ export function validAlphabets(str: string): boolean {
  * @returns {Boolean}
  */
 export function validEmail(email: string): boolean {
-  const reg = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+  const reg =
+    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
   return reg.test(email)
 }
 

@@ -1,6 +1,18 @@
 import request from '@/utils/request'
-import { parseStrEmpty } from "@/utils/ruoyi"
-import type { UserQueryParams, UserFormDataResult, UserProfileResult, UserAuthRoleResult, UserProfileAvatarResult, SysUser, SysUserRole, SysUserRoles, AjaxResult, TableDataInfo, TreeSelect } from '@/types'
+import { parseStrEmpty } from '@/utils/ruoyi'
+import type {
+  UserQueryParams,
+  UserFormDataResult,
+  UserProfileResult,
+  UserAuthRoleResult,
+  UserProfileAvatarResult,
+  SysUser,
+  SysUserRole,
+  SysUserRoles,
+  AjaxResult,
+  TableDataInfo,
+  TreeSelect
+} from '@/types'
 
 // 查询用户列表
 export function listUser(query: UserQueryParams): Promise<TableDataInfo<SysUser[]>> {

@@ -1,5 +1,15 @@
 import request from '@/utils/request'
-import type { RoleQueryParams, AuthUserQueryParams, SysRole, SysUser, SysUserRole, AuthUserSelectParams, AjaxResult, RoleDeptTreeResult, TableDataInfo } from '@/types'
+import type {
+  RoleQueryParams,
+  AuthUserQueryParams,
+  SysRole,
+  SysUser,
+  SysUserRole,
+  AuthUserSelectParams,
+  AjaxResult,
+  RoleDeptTreeResult,
+  TableDataInfo
+} from '@/types'
 
 // 查询角色列表
 export function listRole(query: RoleQueryParams): Promise<TableDataInfo<SysRole[]>> {

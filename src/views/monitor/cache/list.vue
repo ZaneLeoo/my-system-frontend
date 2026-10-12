@@ -4,7 +4,8 @@
       <el-col :span="8">
         <el-card style="height: calc(100vh - 125px)">
           <template #header>
-            <Collection style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">缓存列表</span>
+            <Collection style="width: 1em; height: 1em; vertical-align: middle" />
+            <span style="vertical-align: middle">缓存列表</span>
             <el-button
               style="float: right; padding: 3px 0"
               link
@@ -21,11 +22,7 @@
             @row-click="getCacheKeys"
             style="width: 100%"
           >
-            <el-table-column
-              label="序号"
-              width="60"
-              type="index"
-            ></el-table-column>
+            <el-table-column label="序号" width="60" type="index"></el-table-column>
 
             <el-table-column
               label="缓存名称"
@@ -35,25 +32,10 @@
               :formatter="nameFormatter"
             ></el-table-column>
 
-            <el-table-column
-              label="备注"
-              align="center"
-              prop="remark"
-              :show-overflow-tooltip="true"
-            />
-            <el-table-column
-              label="操作"
-              width="60"
-              align="center"
-              class-name="small-padding fixed-width"
-            >
+            <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
+            <el-table-column label="操作" width="60" align="center" class-name="small-padding fixed-width">
               <template #default="scope">
-                <el-button
-                  link
-                  type="primary"
-                  icon="Delete"
-                  @click="handleClearCacheName(scope.row)"
-                ></el-button>
+                <el-button link type="primary" icon="Delete" @click="handleClearCacheName(scope.row)"></el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -63,7 +45,8 @@
       <el-col :span="8">
         <el-card style="height: calc(100vh - 125px)">
           <template #header>
-            <Key style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">键名列表</span>
+            <Key style="width: 1em; height: 1em; vertical-align: middle" />
+            <span style="vertical-align: middle">键名列表</span>
             <el-button
               style="float: right; padding: 3px 0"
               link
@@ -80,31 +63,16 @@
             @row-click="handleCacheValue"
             style="width: 100%"
           >
-            <el-table-column
-              label="序号"
-              width="60"
-              type="index"
-            ></el-table-column>
+            <el-table-column label="序号" width="60" type="index"></el-table-column>
             <el-table-column
               label="缓存键名"
               align="center"
               :show-overflow-tooltip="true"
               :formatter="keyFormatter"
-            >
-            </el-table-column>
-            <el-table-column
-              label="操作"
-              width="60"
-              align="center"
-              class-name="small-padding fixed-width"
-            >
+            ></el-table-column>
+            <el-table-column label="操作" width="60" align="center" class-name="small-padding fixed-width">
               <template #default="scope">
-                <el-button
-                  link
-                  type="primary"
-                  icon="Delete"
-                  @click="handleClearCacheKey(scope.row)"
-                ></el-button>
+                <el-button link type="primary" icon="Delete" @click="handleClearCacheKey(scope.row)"></el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -114,15 +82,17 @@
       <el-col :span="8">
         <el-card :bordered="false" style="height: calc(100vh - 125px)">
           <template #header>
-            <Document style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">缓存内容</span>
+            <Document style="width: 1em; height: 1em; vertical-align: middle" />
+            <span style="vertical-align: middle">缓存内容</span>
             <el-button
               style="float: right; padding: 3px 0"
               link
               type="primary"
               icon="Refresh"
               @click="handleClearCacheAll()"
-              >清理全部</el-button
             >
+              清理全部
+            </el-button>
           </template>
           <el-form :model="cacheForm">
             <el-row :gutter="32">
@@ -138,12 +108,7 @@
               </el-col>
               <el-col :offset="1" :span="22">
                 <el-form-item label="缓存内容:" prop="cacheValue">
-                  <el-input
-                    v-model="cacheForm.cacheValue"
-                    type="textarea"
-                    :rows="8"
-                    :readOnly="true"
-                  />
+                  <el-input v-model="cacheForm.cacheValue" type="textarea" :rows="8" :readOnly="true" />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -155,7 +120,14 @@
 </template>
 
 <script setup lang="ts" name="CacheList">
-import { listCacheName, listCacheKey, getCacheValue, clearCacheName, clearCacheKey, clearCacheAll } from "@/api/monitor/cache"
+import {
+  listCacheName,
+  listCacheKey,
+  getCacheValue,
+  clearCacheName,
+  clearCacheKey,
+  clearCacheAll
+} from '@/api/monitor/cache'
 import type { SysCache } from '@/types/api/monitor/cache'
 
 interface CacheName {
@@ -176,13 +148,13 @@ const cacheKeys = ref<string[]>([])
 const cacheForm = ref<CacheForm>({})
 const loading = ref<boolean>(true)
 const subLoading = ref<boolean>(false)
-const nowCacheName = ref<string>("")
+const nowCacheName = ref<string>('')
 const tableHeight = ref<number>(window.innerHeight - 200)
 
 /** 查询缓存名称列表 */
 function getCacheNames(): void {
   loading.value = true
-  listCacheName().then(response => {
+  listCacheName().then((response) => {
     cacheNames.value = response.data!
     loading.value = false
   })
@@ -191,13 +163,13 @@ function getCacheNames(): void {
 /** 刷新缓存名称列表 */
 function refreshCacheNames(): void {
   getCacheNames()
-  proxy.$modal.msgSuccess("刷新缓存列表成功")
+  proxy.$modal.msgSuccess('刷新缓存列表成功')
 }
 
 /** 清理指定名称缓存 */
 function handleClearCacheName(row: SysCache): void {
   clearCacheName(row.cacheName as string).then(() => {
-    proxy.$modal.msgSuccess("清理缓存名称[" + row.cacheName + "]成功")
+    proxy.$modal.msgSuccess('清理缓存名称[' + row.cacheName + ']成功')
     getCacheKeys()
   })
 }
@@ -205,11 +177,11 @@ function handleClearCacheName(row: SysCache): void {
 /** 查询缓存键名列表 */
 function getCacheKeys(row?: SysCache): void {
   const cacheName = row !== undefined ? row.cacheName : nowCacheName.value
-  if (cacheName === "") {
+  if (cacheName === '') {
     return
   }
   subLoading.value = true
-  listCacheKey(cacheName).then(response => {
+  listCacheKey(cacheName).then((response) => {
     cacheKeys.value = response.data!
     subLoading.value = false
     nowCacheName.value = cacheName
@@ -219,13 +191,13 @@ function getCacheKeys(row?: SysCache): void {
 /** 刷新缓存键名列表 */
 function refreshCacheKeys(): void {
   getCacheKeys()
-  proxy.$modal.msgSuccess("刷新键名列表成功")
+  proxy.$modal.msgSuccess('刷新键名列表成功')
 }
 
 /** 清理指定键名缓存 */
 function handleClearCacheKey(cacheKey: string): void {
   clearCacheKey(cacheKey).then(() => {
-    proxy.$modal.msgSuccess("清理缓存键名[" + cacheKey + "]成功")
+    proxy.$modal.msgSuccess('清理缓存键名[' + cacheKey + ']成功')
     getCacheKeys()
   })
 }
@@ -233,17 +205,17 @@ function handleClearCacheKey(cacheKey: string): void {
 /** 列表前缀去除 */
 function nameFormatter(row: SysCache): string {
   if (!row?.cacheName) return ''
-  return row.cacheName.replace(":", "")
+  return row.cacheName.replace(':', '')
 }
 
 /** 键名前缀去除 */
 function keyFormatter(cacheKey: string): string {
-  return cacheKey.replace(nowCacheName.value, "")
+  return cacheKey.replace(nowCacheName.value, '')
 }
 
 /** 查询缓存内容详细 */
 function handleCacheValue(cacheKey: string): void {
-  getCacheValue(nowCacheName.value, cacheKey).then(response => {
+  getCacheValue(nowCacheName.value, cacheKey).then((response) => {
     cacheForm.value = response.data!
   })
 }
@@ -251,7 +223,7 @@ function handleCacheValue(cacheKey: string): void {
 /** 清理全部缓存 */
 function handleClearCacheAll(): void {
   clearCacheAll().then(() => {
-    proxy.$modal.msgSuccess("清理全部缓存成功")
+    proxy.$modal.msgSuccess('清理全部缓存成功')
   })
 }
 

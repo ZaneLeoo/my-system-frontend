@@ -1,5 +1,13 @@
 import request from '@/utils/request'
-import type { NoticeQueryParams, NoticeReadUserQueryParams, SysNotice, NoticeReadUser, SysNoticeTopResult, AjaxResult, TableDataInfo } from '@/types'
+import type {
+  NoticeQueryParams,
+  NoticeReadUserQueryParams,
+  SysNotice,
+  NoticeReadUser,
+  SysNoticeTopResult,
+  AjaxResult,
+  TableDataInfo
+} from '@/types'
 
 // 查询公告列表
 export function listNotice(query: NoticeQueryParams): Promise<TableDataInfo<SysNotice[]>> {

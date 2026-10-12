@@ -7,25 +7,17 @@
           一直想做一款后台管理系统，看了很多优秀的开源项目但是发现没有合适自己的。于是利用空闲休息时间开始自己写一套后台系统。如此有了若依管理系统，她可以用于所有的Web应用程序，如网站管理后台，网站会员中心，CMS，CRM，OA等等，当然，您也可以对她进行深度定制，以做出更强系统。所有前端后台代码封装过后十分精简易上手，出错概率低。同时支持移动客户端访问。系统会陆续更新一些实用功能。
         </p>
         <p>
-          <b>当前版本:</b> <span>v{{ version }}</span>
+          <b>当前版本:</b>
+          <span>v{{ version }}</span>
         </p>
         <p>
           <el-tag type="danger">&yen;免费开源</el-tag>
         </p>
         <p>
-          <el-button
-            type="primary"
-            icon="Cloudy"
-            plain
-            @click="goTarget('https://gitee.com/y_project/RuoYi-Vue')"
-            >访问码云</el-button
-          >
-          <el-button
-            icon="HomeFilled"
-            plain
-            @click="goTarget('http://ruoyi.vip')"
-            >访问主页</el-button
-          >
+          <el-button type="primary" icon="Cloudy" plain @click="goTarget('https://gitee.com/y_project/RuoYi-Vue')">
+            访问码云
+          </el-button>
+          <el-button icon="HomeFilled" plain @click="goTarget('http://ruoyi.vip')">访问主页</el-button>
         </p>
       </el-col>
 
@@ -74,34 +66,57 @@
           </template>
           <div class="body">
             <p>
-              <i class="el-icon-s-promotion"></i> 官网：<el-link
-                href="http://www.ruoyi.vip"
+              <i class="el-icon-s-promotion"></i>
+              官网：
+              <el-link href="http://www.ruoyi.vip" target="_blank">http://www.ruoyi.vip</el-link>
+            </p>
+            <p>
+              <i class="el-icon-user-solid"></i>
+              QQ群：
+              <s>满937441</s>
+              <s>满887144332</s>
+              <s>满180251782</s>
+              <s>满104180207</s>
+              <s>满186866453</s>
+              <s>满201396349</s>
+              <s>满101456076</s>
+              <s>满101539465</s>
+              <s>满264312783</s>
+              <s>满167385320</s>
+              <s>满104748341</s>
+              <s>满160110482</s>
+              <s>满170801498</s>
+              <s>满108482800</s>
+              <s>满101046199</s>
+              <s>满136919097</s>
+              <s>满143961921</s>
+              <s>满174951577</s>
+              <s>满161281055</s>
+              <s>满138988063</s>
+              <s>满151450850</s>
+              <s>满224622315</s>
+              <s>满287842588</s>
+              <s>满187944233</s>
+              <s>满228578329</s>
+              <s>满191164766</s>
+              <s>满174569686</s>
+              <s>满127358632</s>
+              <a
+                href="http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=EQz10zmHf6ga7Zv2U5kWNrpkBlnknJE-&authKey=65C4sdiKSSyJFEtartvUfLEHQiPYoysBoVkNuLP1AxpKdV4nQR%2FEvobGCI9jvDpQ&noverify=0&group_code=113071109"
                 target="_blank"
-                >http://www.ruoyi.vip</el-link
               >
+                113071109
+              </a>
             </p>
             <p>
-              <i class="el-icon-user-solid"></i> QQ群：<s> 满937441 </s> <s> 满887144332 </s>
-              <s> 满180251782 </s> <s> 满104180207 </s> <s> 满186866453 </s> <s> 满201396349 </s>
-              <s> 满101456076 </s> <s> 满101539465 </s> <s> 满264312783 </s> <s> 满167385320 </s> 
-              <s> 满104748341 </s> <s> 满160110482 </s> <s> 满170801498 </s> <s> 满108482800 </s> 
-              <s> 满101046199 </s> <s> 满136919097 </s> <s> 满143961921 </s> <s> 满174951577 </s> 
-              <s> 满161281055 </s> <s> 满138988063 </s> <s> 满151450850 </s> <s> 满224622315 </s>
-              <s> 满287842588 </s> <s> 满187944233 </s> <s> 满228578329 </s> <s> 满191164766 </s>
-              <s> 满174569686 </s> <s> 满127358632 </s> <a href="http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=EQz10zmHf6ga7Zv2U5kWNrpkBlnknJE-&authKey=65C4sdiKSSyJFEtartvUfLEHQiPYoysBoVkNuLP1AxpKdV4nQR%2FEvobGCI9jvDpQ&noverify=0&group_code=113071109" target="_blank">113071109</a>
+              <i class="el-icon-chat-dot-round"></i>
+              微信：
+              <a href="javascript:;">/ *若依</a>
             </p>
             <p>
-              <i class="el-icon-chat-dot-round"></i> 微信：<a
-                href="javascript:;"
-                >/ *若依</a
-              >
-            </p>
-            <p>
-              <i class="el-icon-money"></i> 支付宝：<a
-                href="javascript:;"
-                class="支付宝信息"
-                >/ *若依</a
-              >
+              <i class="el-icon-money"></i>
+              支付宝：
+              <a href="javascript:;" class="支付宝信息">/ *若依</a>
             </p>
           </div>
         </el-card>
@@ -950,9 +965,7 @@
                 <li>调整表头固定列默认样式</li>
                 <li>代码生成模板调整，字段为String并且必填则加空串条件</li>
                 <li>代码生成字典Integer/Long使用parseInt</li>
-                <li>
-                  修复dict_sort不可update为0的问题&查询返回增加dict_sort升序排序
-                </li>
+                <li>修复dict_sort不可update为0的问题&查询返回增加dict_sort升序排序</li>
                 <li>修正岗位导出权限注解</li>
                 <li>禁止加密密文返回前端</li>
                 <li>修复代码生成页面中的查询条件创建时间未生效的问题</li>
@@ -1114,14 +1127,8 @@
             </div>
           </template>
           <div class="body">
-            <img
-              src="@/assets/images/pay.png"
-              alt="donate"
-              style="width:100%"
-            />
-            <span style="display: inline-block; height: 30px; line-height: 30px"
-              >你可以请作者喝杯咖啡表示鼓励</span
-            >
+            <img src="@/assets/images/pay.png" alt="donate" style="width: 100%" />
+            <span style="display: inline-block; height: 30px; line-height: 30px">你可以请作者喝杯咖啡表示鼓励</span>
           </div>
         </el-card>
       </el-col>
@@ -1160,7 +1167,7 @@ function goTarget(url: string): void {
     margin: 0;
   }
 
-  font-family: "open sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: 'open sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 13px;
   color: #676a6c;
   overflow-x: hidden;
@@ -1200,4 +1207,3 @@ function goTarget(url: string): void {
   }
 }
 </style>
-

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+package-lock.json
+auto-imports.d.ts
+README.upstream.md
+public/html/

@@ -21,7 +21,10 @@ const PWD_RULES: Record<string, { pattern: RegExp; message: string }> = {
   '1': { pattern: /^[0-9]+$/, message: '密码只能为数字（0-9）' },
   '2': { pattern: /^[a-zA-Z]+$/, message: '密码只能为英文字母（a-z、A-Z）' },
   '3': { pattern: /^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]+$/, message: '密码必须同时包含字母和数字' },
-  '4': { pattern: /^(?=.*[A-Za-z])(?=.*\d)(?=.*[~!@#$%^&*()\-=_+])[A-Za-z\d~!@#$%^&*()\-=_+]+$/, message: '密码必须同时包含字母、数字和特殊字符（~!@#$%^&*()-=_+）' }
+  '4': {
+    pattern: /^(?=.*[A-Za-z])(?=.*\d)(?=.*[~!@#$%^&*()\-=_+])[A-Za-z\d~!@#$%^&*()\-=_+]+$/,
+    message: '密码必须同时包含字母、数字和特殊字符（~!@#$%^&*()-=_+）'
+  }
 }
 
 export function usePasswordRule() {

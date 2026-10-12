@@ -14,4 +14,3 @@ export default function createAutoImport() {
     dts: true
   })
 }
-
