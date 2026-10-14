@@ -26,22 +26,6 @@ import Layout from '@/layout/index.vue'
 
 // 公共路由
 export const constantRoutes = [
-  ...(import.meta.env.DEV
-    ? [
-        {
-          path: '/demo',
-          component: Layout,
-          children: [
-            {
-              path: 'vxe',
-              name: 'VxeDemo',
-              component: () => import('@/views/demo/vxe/index.vue'),
-              meta: { title: 'VXE 组件演示', icon: 'table', noCache: true }
-            }
-          ]
-        }
-      ]
-    : []),
   {
     path: '/redirect',
     component: Layout,
