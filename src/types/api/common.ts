@@ -1,3 +1,26 @@
+/** 新业务统一响应，失败由请求拦截器处理。 */
+export interface ApiResponse<T> {
+  code: number
+  msg: string
+  data: T
+}
+
+/** 新业务分页结果，不重复包装状态码。 */
+export interface PageResult<T> {
+  rows: T[]
+  total: number
+}
+
+/** 新业务受控分页参数。 */
+export interface PageQuery {
+  pageNum: number
+  pageSize: number
+}
+
+/** 与后端公共 EnableStatus 编码一致。 */
+export const EnableStatus = { Enabled: '0', Disabled: '1' } as const
+export type EnableStatusCode = (typeof EnableStatus)[keyof typeof EnableStatus]
+
 /** API 通用响应类型 */
 export interface AjaxResult<T = any> {
   /** 状态码 */
