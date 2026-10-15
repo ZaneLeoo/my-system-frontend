@@ -1,15 +1,5 @@
 <template>
   <div class="app-container category-page">
-    <div class="page-heading">
-      <div>
-        <h2>料品分类</h2>
-        <p>按层级组织料品，供采购与库存档案共用。</p>
-      </div>
-      <el-button v-if="canCreate" type="primary" icon="Plus" :disabled="loading" @click="openDrawer('create')">
-        新增分类
-      </el-button>
-    </div>
-
     <el-form :model="query" inline class="query-form" @submit.prevent="searchCategories">
       <el-form-item label="分类编码">
         <el-input v-model="query.categoryCode" placeholder="请输入编码" clearable maxlength="64" />
@@ -35,6 +25,9 @@
         <span v-if="contextCount">，另显示 {{ contextCount }} 个上级节点</span>
       </span>
       <div>
+        <el-button v-if="canCreate" type="primary" icon="Plus" :disabled="loading" @click="openDrawer('create')">
+          新增分类
+        </el-button>
         <el-button text :disabled="loading || !rows.length" @click="tableRef?.setAllTreeExpand(true)">
           展开全部
         </el-button>
@@ -580,24 +573,12 @@ onMounted(() => void loadCategories())
 </script>
 
 <style scoped lang="scss">
-.page-heading,
 .table-toolbar,
 .form-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-}
-.page-heading {
-  margin-bottom: 24px;
-  h2 {
-    margin: 0 0 8px;
-    font-size: 22px;
-  }
-  p {
-    margin: 0;
-    color: var(--el-text-color-secondary);
-  }
 }
 .query-form {
   margin-bottom: 4px;
@@ -635,14 +616,5 @@ onMounted(() => void loadCategories())
 }
 :deep(.context-row) {
   color: var(--el-text-color-secondary);
-}
-@media (max-width: 640px) {
-  .page-heading {
-    align-items: flex-start;
-  }
-  .page-heading p {
-    max-width: 200px;
-    line-height: 1.6;
-  }
 }
 </style>
