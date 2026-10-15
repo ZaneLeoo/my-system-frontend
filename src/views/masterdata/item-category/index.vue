@@ -10,7 +10,7 @@
       </el-button>
     </div>
 
-    <el-form :model="query" inline class="query-form" @submit.prevent="loadCategories(true)">
+    <el-form :model="query" inline class="query-form" @submit.prevent="searchCategories">
       <el-form-item label="分类编码">
         <el-input v-model="query.categoryCode" placeholder="请输入编码" clearable maxlength="64" />
       </el-form-item>
@@ -25,7 +25,7 @@
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" native-type="submit" :loading="loading">查询</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+        <el-button icon="Refresh" :disabled="loading" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
@@ -55,28 +55,94 @@
       max-height="640"
       :column-config="{ resizable: true }"
       :row-config="{ keyField: 'categoryId', isHover: true }"
-      :tree-config="{ transform: true, rowField: 'categoryId', parentField: 'parentId', reserve: true }"
+      :tree-config="{
+        transform: true,
+        rowField: 'categoryId',
+        parentField: 'parentId',
+        childrenField: 'children',
+        mapChildrenField: '_treeChildren',
+        reserve: true
+      }"
+      :sort-config="categorySortConfig"
+      :filter-config="{ remote: true }"
       :row-class-name="rowClassName"
+      @filter-change="handleColumnFilter"
+      @filter-visible="handleFilterVisible"
     >
-      <vxe-column field="categoryCode" title="分类编码" tree-node min-width="240">
+      <vxe-column
+        field="categoryCode"
+        title="分类编码"
+        tree-node
+        min-width="240"
+        sortable
+        sort-type="string"
+        :filters="codeFilters"
+        :filter-multiple="false"
+      >
         <template #default="{ row }">
           <el-button v-if="canQuery" link type="primary" @click="openDrawer('detail', row)">
             {{ row.categoryCode }}
           </el-button>
           <span v-else>{{ row.categoryCode }}</span>
         </template>
+        <template #filter="params">
+          <form class="column-text-filter" @submit.prevent="applyTextFilter($event, params)">
+            <el-input
+              v-model="textFilterDraft.categoryCode"
+              placeholder="包含编码"
+              maxlength="64"
+              clearable
+              aria-label="分类编码列筛选"
+            />
+            <div class="filter-actions">
+              <el-button size="small" @click="applyTextFilter($event, params, true)">清除</el-button>
+              <el-button size="small" type="primary" native-type="submit">筛选</el-button>
+            </div>
+          </form>
+        </template>
       </vxe-column>
-      <vxe-column field="categoryName" title="分类名称" min-width="200" />
-      <vxe-column field="status" title="状态" width="100" align="center">
+      <vxe-column
+        field="categoryName"
+        title="分类名称"
+        min-width="200"
+        sortable
+        sort-type="string"
+        :filters="nameFilters"
+        :filter-multiple="false"
+      >
+        <template #filter="params">
+          <form class="column-text-filter" @submit.prevent="applyTextFilter($event, params)">
+            <el-input
+              v-model="textFilterDraft.categoryName"
+              placeholder="包含名称"
+              maxlength="100"
+              clearable
+              aria-label="分类名称列筛选"
+            />
+            <div class="filter-actions">
+              <el-button size="small" @click="applyTextFilter($event, params, true)">清除</el-button>
+              <el-button size="small" type="primary" native-type="submit">筛选</el-button>
+            </div>
+          </form>
+        </template>
+      </vxe-column>
+      <vxe-column
+        field="status"
+        title="状态"
+        width="110"
+        align="center"
+        :filters="statusFilters"
+        :filter-multiple="false"
+      >
         <template #default="{ row }">
           <el-tag :type="row.status === CategoryStatus.Enabled ? 'success' : 'info'" effect="plain">
             {{ row.status === CategoryStatus.Enabled ? '启用' : '停用' }}
           </el-tag>
         </template>
       </vxe-column>
-      <vxe-column field="sortOrder" title="排序" width="80" align="right" />
+      <vxe-column field="sortOrder" title="排序" width="100" align="right" sortable sort-type="number" />
       <vxe-column field="remark" title="备注" min-width="200" />
-      <vxe-column field="updateTime" title="最后修改时间" width="180" />
+      <vxe-column field="updateTime" title="最后修改时间" width="200" sortable sort-type="string" />
       <vxe-column title="操作" width="230" fixed="right">
         <template #default="{ row }">
           <el-button v-if="canQuery" link type="primary" @click="openDrawer('detail', row)">详情</el-button>
@@ -181,7 +247,13 @@
 import { computed, nextTick, onMounted, reactive, ref, shallowRef } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus/es/components/form'
-import type { VxeTableInstance, VxeTablePropTypes } from 'vxe-table'
+import type {
+  VxeColumnPropTypes,
+  VxeColumnSlotTypes,
+  VxeTableDefines,
+  VxeTableInstance,
+  VxeTablePropTypes
+} from 'vxe-table'
 import { useVxe } from '@/plugins/vxe'
 import auth from '@/plugins/auth'
 import {
@@ -205,9 +277,24 @@ useVxe()
 const ROOT_ID = 0
 const MAX_SORT_ORDER = 2147483647
 type DrawerMode = 'create' | 'edit' | 'detail'
-const tableRef = ref<VxeTableInstance<ItemCategory>>()
-const rows = shallowRef<ItemCategory[]>([])
+type CategoryTableRow = ItemCategory & { children?: CategoryTableRow[]; _treeChildren?: CategoryTableRow[] }
+const tableRef = ref<VxeTableInstance<CategoryTableRow>>()
+const rows = shallowRef<CategoryTableRow[]>([])
+const categorySortConfig: VxeTablePropTypes.SortConfig<CategoryTableRow> = {
+  isDeep: true,
+  multiple: false,
+  allowClear: true,
+  sortMethod: sortCategoryTree
+}
 const query = reactive<CategoryQuery>({})
+const appliedQuery = ref<CategoryQuery>({})
+const textFilterDraft = reactive({ categoryCode: '', categoryName: '' })
+const codeFilters = computed(() => textFilters(appliedQuery.value.categoryCode))
+const nameFilters = computed(() => textFilters(appliedQuery.value.categoryName))
+const statusFilters = computed<VxeColumnPropTypes.Filters>(() => [
+  { label: '启用', value: CategoryStatus.Enabled, checked: appliedQuery.value.status === CategoryStatus.Enabled },
+  { label: '停用', value: CategoryStatus.Disabled, checked: appliedQuery.value.status === CategoryStatus.Disabled }
+])
 const loading = ref(false)
 const deletingId = ref<number>()
 const drawerOpen = ref(false)
@@ -275,19 +362,21 @@ function toForm(category: ItemCategory): SaveCategoryRequest {
   }
 }
 
-/** 最新请求生效；保存和刷新后保留当前筛选与节点展开状态。 */
-async function loadCategories(expandMatches = false, expandParentId?: number) {
+/** 最新请求生效；刷新和保存沿用已生效的筛选，不提交搜索框内尚未查询的草稿。 */
+async function loadCategories(
+  expandMatches = false,
+  expandParentId?: number,
+  filters: CategoryQuery = appliedQuery.value
+) {
   const sequence = ++listSequence
+  const requestedQuery = { ...filters }
   const expandedIds = new Set(tableRef.value?.getTreeExpandRecords().map((row) => row.categoryId) ?? [])
   loading.value = true
   try {
-    const response = await listCategories({
-      categoryCode: query.categoryCode?.trim() || undefined,
-      categoryName: query.categoryName?.trim() || undefined,
-      status: query.status || undefined
-    })
+    const response = await listCategories(requestedQuery)
     if (sequence !== listSequence) return
     rows.value = response.data ?? []
+    appliedQuery.value = requestedQuery
     await nextTick()
     if (sequence !== listSequence) return
     if (!initialized || expandMatches) {
@@ -301,16 +390,93 @@ async function loadCategories(expandMatches = false, expandParentId?: number) {
     initialized = true
   } catch {
     // 请求层统一显示接口错误，保留当前已展示的数据。
+    if (sequence === listSequence) appliedQuery.value = { ...appliedQuery.value }
   } finally {
     if (sequence === listSequence) loading.value = false
   }
 }
 
-function resetQuery() {
+/** 文本列筛选选项随已生效的查询同步，筛选由后端执行以保留祖先。 */
+function textFilters(value?: string): VxeColumnPropTypes.Filters<string> {
+  return [{ label: '包含', value: 'contains', data: value ?? '', checked: Boolean(value) }]
+}
+
+/** 同级排序返回展示副本，避免 VXE 默认深层排序将业务 parentId 按默认 id 字段重写。 */
+function sortCategoryTree({
+  data,
+  sortList
+}: Parameters<NonNullable<VxeTablePropTypes.SortConfig<CategoryTableRow>['sortMethod']>>[0]): CategoryTableRow[] {
+  const sort = sortList[0]
+  if (!sort?.order) return data
+  const field = sort.field
+  if (field !== 'categoryCode' && field !== 'categoryName' && field !== 'sortOrder' && field !== 'updateTime')
+    return data
+  const direction = sort.order === 'desc' ? -1 : 1
+  const compare = (left: CategoryTableRow, right: CategoryTableRow) => {
+    const a = left[field]
+    const b = right[field]
+    const result =
+      typeof a === 'number' && typeof b === 'number' ? a - b : String(a ?? '').localeCompare(String(b ?? ''), 'zh-CN')
+    return direction * result
+  }
+  const sortLevel = (nodes: CategoryTableRow[]): CategoryTableRow[] =>
+    [...nodes].sort(compare).map((node) => {
+      const children = sortLevel(node._treeChildren ?? [])
+      return { ...node, children, _treeChildren: children }
+    })
+  return sortLevel(data)
+}
+
+function searchCategories() {
+  const filters: CategoryQuery = {
+    categoryCode: query.categoryCode?.trim() || undefined,
+    categoryName: query.categoryName?.trim() || undefined,
+    status: query.status || undefined
+  }
+  Object.assign(query, filters)
+  void loadCategories(true, undefined, filters)
+}
+
+/** 使用 VXE 原生筛选事件更新条件，不在前端二次过滤树节点。 */
+async function applyTextFilter(event: Event, params: VxeColumnSlotTypes.FilterSlotParams<ItemCategory>, clear = false) {
+  const field = params.column.field
+  if (field !== 'categoryCode' && field !== 'categoryName') return
+  const value = clear ? '' : textFilterDraft[field].trim()
+  await tableRef.value?.setFilterByEvent(event, params.column, textFilters(value))
+  await tableRef.value?.closeFilter()
+}
+
+/** 弹层草稿与已生效的筛选分离，关闭未提交的弹层不会影响后续组合筛选。 */
+function handleFilterVisible({ field, visible }: VxeTableDefines.FilterVisibleEventParams<ItemCategory>) {
+  if (visible && (field === 'categoryCode' || field === 'categoryName')) {
+    textFilterDraft[field] = appliedQuery.value[field] ?? ''
+  }
+}
+
+/** 列筛选与查询表单共享一组已提交条件，多列条件按 AND 组合。 */
+function handleColumnFilter({ filterList }: VxeTableDefines.FilterChangeEventParams<ItemCategory>) {
+  const filters: CategoryQuery = { categoryCode: undefined, categoryName: undefined, status: undefined }
+  for (const filter of filterList) {
+    if (filter.field === 'categoryCode' || filter.field === 'categoryName') {
+      const value: unknown = filter.datas[0]
+      filters[filter.field] = typeof value === 'string' ? value.trim() || undefined : undefined
+    } else if (filter.field === 'status') {
+      const value: unknown = filter.values[0]
+      if (value === CategoryStatus.Enabled || value === CategoryStatus.Disabled) filters.status = value
+    }
+  }
+  Object.assign(query, filters)
+  void loadCategories(true, undefined, filters)
+}
+
+/** 同时重置查询、列筛选与显示排序，恢复服务端的业务显示顺序。 */
+async function resetQuery() {
   query.categoryCode = undefined
   query.categoryName = undefined
   query.status = undefined
-  void loadCategories(true)
+  await tableRef.value?.closeFilter()
+  await tableRef.value?.clearSort()
+  await loadCategories(true, undefined, {})
 }
 
 /** 详情及上级选项均读取最新接口结果，避免使用列表中的旧版本编辑。 */
@@ -457,6 +623,15 @@ onMounted(() => void loadCategories())
 }
 .audit-info {
   margin-top: 24px;
+}
+.column-text-filter {
+  width: 240px;
+  padding: 12px;
+}
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 :deep(.context-row) {
   color: var(--el-text-color-secondary);

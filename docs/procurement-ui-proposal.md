@@ -58,6 +58,8 @@ flowchart LR
 
 已锁定并接入 `vxe-table` 4.22.4、`vxe-pc-ui` 4.20.1、`@vxe-ui/plugin-render-element` 4.4.3，公共接入配置位于 `src/plugins/vxe.ts`。`@vxe-ui/plugin-export-xlsx` 4.5.4 仅核验元数据，尚未安装。
 
+料品分类直接使用 VXE 原生列功能：编码、名称、显示顺序和修改时间支持同级节点排序；编码、名称和状态支持列筛选。列筛选与顶部查询共享条件，由后端保留匹配节点的祖先。刷新和保存沿用已生效的筛选与排序，重置同时清除两者；筛选弹层及查询框中的未提交输入不参与刷新请求。
+
 `@vxe-ui/plugin-export-xlsx` 的官方说明覆盖 XLSX 导出，不据此承诺 XLSX 导入。业务文件导入统一走后端解析、权限检查、逐行校验与预览确认，避免各表格页面形成不同规则。
 
 ## 模板一：基础档案单表
@@ -111,7 +113,7 @@ flowchart LR
 
 ## 复用边界
 
-建议先提炼 `BusinessListPage`、`MasterDataDrawer`、`DocumentEditorPage`、`DocumentLinesGrid` 四类组件。各业务页持有自己的强类型查询参数、表头与行模型，表格组件通过类型化列定义、插槽、校验和事件扩展。
+当前分类页先完整使用 VXE 原生功能，继续通过 `useVxe` 统一语言和主题，暂不封装通用表格组件。待料品档案和采购订单形成真实页面后，再按重复需求提炼 `BusinessListPage`、`MasterDataDrawer`、`DocumentEditorPage`、`DocumentLinesGrid`。各业务页持有自己的强类型查询参数、表头与行模型，保留 VXE 原生配置、插槽和事件的使用能力。
 
 共享的是布局和交互协议：筛选、分页、列偏好、加载与空状态、脏数据提示、明细增删、错误定位。业务字段、金额规则、来源关联、审批与记账规则由业务模块负责。先以料品和采购订单验证抽象，再推广到供应商、仓库、到货与入库，避免首期构建通用低代码引擎。
 
