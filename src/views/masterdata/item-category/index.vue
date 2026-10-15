@@ -46,7 +46,8 @@
       stripe
       show-overflow
       max-height="640"
-      :column-config="{ resizable: true }"
+      :column-config="{ resizable: true, drag: true }"
+      :column-drag-config="{ trigger: 'default', showIcon: true }"
       :row-config="{ keyField: 'categoryId', isHover: true }"
       :tree-config="{
         transform: true,
