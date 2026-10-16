@@ -232,14 +232,12 @@
                 <el-input v-model="form.specification" maxlength="200" show-word-limit />
               </el-form-item>
               <el-form-item label="料品分类" prop="categoryId">
-                <el-tree-select
-                  v-model="form.categoryId"
-                  :data="categoryOptions"
-                  node-key="id"
-                  check-strictly
-                  filterable
+                <ItemCategoryPicker
+                  :model-value="form.categoryId ?? null"
+                  :options="categoryOptions"
+                  :clearable="false"
                   placeholder="请选择启用分类（可选择任意层级）"
-                  style="width: 100%"
+                  @update:model-value="form.categoryId = $event ?? undefined"
                 />
               </el-form-item>
               <el-form-item label="状态" prop="status">
@@ -254,22 +252,12 @@
             </el-tab-pane>
             <el-tab-pane label="单位设置" name="units">
               <el-form-item v-for="u in unitFields" :key="u.field" :label="u.title" :prop="u.field">
-                <el-select
-                  :model-value="form[u.field] ?? undefined"
-                  clearable
-                  filterable
-                  style="width: 100%"
+                <UnitPicker
+                  :model-value="form[u.field] ?? null"
+                  :options="unitOptions"
                   :placeholder="u.field === 'baseUnitId' ? '请选择库存单位' : '可不设置'"
                   @update:model-value="updateUnit(u.field, $event)"
-                >
-                  <el-option
-                    v-for="option in unitOptions"
-                    :key="option.unitId"
-                    :value="option.unitId"
-                    :label="`${option.unitCode} / ${option.unitName}${option.status === '1' ? '（停用）' : ''}`"
-                    :disabled="option.status === '1'"
-                  />
-                </el-select>
+                />
               </el-form-item>
             </el-tab-pane>
             <el-tab-pane label="采购设置" name="purchase">
@@ -334,6 +322,8 @@ import {
   getCategoryOptions,
   getUnitOptions
 } from '@/api/masterdata/item'
+import ItemCategoryPicker from '@/components/masterdata/ItemCategoryPicker/index.vue'
+import UnitPicker from '@/components/masterdata/UnitPicker/index.vue'
 import { useVxe } from '@/plugins/vxe'
 import auth from '@/plugins/auth'
 import { EnableStatus } from '@/types/api/common'
