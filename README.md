@@ -44,6 +44,10 @@ npm run build:prod
 依赖安装时已更新 Vue、Axios、js-cookie 和 Vite 的兼容补丁/次版本。
 `npm audit` 仍报告上游 ECharts 和 SVG/自动导入构建工具链的依赖告警；未使用 `--force` 跨主版本替换上游依赖，后续升级需单独验证。
 
+## 料品档案
+
+菜单“基础资料 → 料品档案”使用 VXE 接口分页列表、列筛选、全量结果排序和六点手柄列拖拽，编码与名称固定左侧、操作固定右侧。编辑／详情采用宽抽屉，分为基本信息、单位设置、采购设置，关闭未保存修改时确认。库存单位首次选择后预填采购及销售单位，后两者可独立修改或清空；税率留空表示未设置。服务端已有数据库需执行 `scripts/apply-item.ps1`，新增菜单后重新登录。当前没有跨单位换算功能。
+
 ## Git
 
 - `origin`：`git@github.com:ZaneLeoo/my-system-frontend.git`
