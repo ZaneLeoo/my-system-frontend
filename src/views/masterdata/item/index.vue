@@ -249,6 +249,12 @@
               <el-form-item label="备注" prop="remark">
                 <el-input v-model="form.remark" type="textarea" :rows="3" maxlength="500" show-word-limit />
               </el-form-item>
+              <el-descriptions v-if="detail" title="维护记录" :column="2" border class="audit-info">
+                <el-descriptions-item label="创建人">{{ detail.createBy }}</el-descriptions-item>
+                <el-descriptions-item label="创建时间">{{ detail.createTime }}</el-descriptions-item>
+                <el-descriptions-item label="修改人">{{ detail.updateBy || '—' }}</el-descriptions-item>
+                <el-descriptions-item label="修改时间">{{ detail.updateTime || '—' }}</el-descriptions-item>
+              </el-descriptions>
             </el-tab-pane>
             <el-tab-pane label="单位设置" name="units">
               <el-form-item v-for="u in unitFields" :key="u.field" :label="u.title" :prop="u.field">
@@ -278,12 +284,6 @@
             </el-tab-pane>
           </el-tabs>
         </el-form>
-        <el-descriptions v-if="detail" title="维护记录" :column="2" border class="audit-info">
-          <el-descriptions-item label="创建人">{{ detail.createBy }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ detail.createTime }}</el-descriptions-item>
-          <el-descriptions-item label="修改人">{{ detail.updateBy || '—' }}</el-descriptions-item>
-          <el-descriptions-item label="修改时间">{{ detail.updateTime || '—' }}</el-descriptions-item>
-        </el-descriptions>
       </div>
       <template #footer>
         <el-button :disabled="saving" @click="beforeClose(() => (drawerOpen = false))">
