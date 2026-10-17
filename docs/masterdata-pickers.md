@@ -1,10 +1,10 @@
 # 基础档案参照选择器
 
-组件位于 `src/components/masterdata/`，入口均为 `index.vue`。`ItemPicker` 提供料品快选及分页参照弹窗，`UnitPicker` 提供单位快选和“更多单位”列表，`ItemCategoryPicker` 提供分类树形单选。
+组件位于 `src/components/masterdata/`，入口均为 `index.vue`。`ItemPicker` 提供料品快选及分页参照弹窗，`UnitPicker` 提供单位快选和“更多单位”列表，`ItemCategoryPicker` 提供分类树形单选，`SupplierPicker` 提供供应商快选及“更多供应商”列表。
 
 ## 调用约定
 
-单选 `v-model` 使用 `number | null`；料品多选传入 `multiple` 并使用 `number[]`。料品组件通过泛型关联 `multiple` 和模型类型。三个组件的 `change` 均返回选中记录数组，清空返回空数组；外部值回显不触发 change。业务页面根据记录回填规格、单位、税率等，不在组件中绑定采购单据规则。
+单选 `v-model` 使用 `number | null`；料品多选传入 `multiple` 并使用 `number[]`。料品组件通过泛型关联 `multiple` 和模型类型。组件的 `change` 均返回选中记录数组，清空返回空数组；外部值回显不触发 change。业务页面根据记录回填规格、单位、税率等，不在组件中绑定采购单据规则。
 
 ```vue
 <ItemPicker v-model="itemId" @change="fillItem" />
@@ -12,6 +12,7 @@
 <ItemPicker v-model="purchaseItemId" purchase-only />
 <UnitPicker v-model="unitId" />
 <ItemCategoryPicker v-model="categoryId" />
+<SupplierPicker v-model="supplierId" @change="fillSupplierContact" />
 ```
 
 共同支持 `disabled`、`clearable`、`placeholder`，继承 Element Plus 表单禁用状态，真实选值后触发表单 change 校验。控件属性与无障碍标签透传到输入控件，组件不全局注册。通过对应目录显式导入：
@@ -20,6 +21,7 @@
 import ItemPicker from '@/components/masterdata/ItemPicker/index.vue'
 import UnitPicker from '@/components/masterdata/UnitPicker/index.vue'
 import ItemCategoryPicker from '@/components/masterdata/ItemCategoryPicker/index.vue'
+import SupplierPicker from '@/components/masterdata/SupplierPicker/index.vue'
 ```
 
 ## 数据和权限
@@ -44,3 +46,11 @@ import ItemCategoryPicker from '@/components/masterdata/ItemCategoryPicker/index
 - 选择器不包含档案增删改，不执行单位换算；新增档案、单据重复行等业务行为由调用页面设计。
 
 浏览器测试宿主页、脚本和截图放在忽略目录，不提交业务菜单或 Demo。
+
+## 供应商参照
+
+`SupplierPicker` 使用 `/masterdata/reference/suppliers`，需要独立 `masterdata:supplier:reference` 权限，不要求供应商列表或维护权限。也可传入 `options` 避免重复请求。
+
+快选匹配编码、名称及简称，最多展示 20 个匹配项；“更多供应商”窗口在完整选项上搜索、排序和分页，显示主要联系人、联系电话。回填对象包含地址及联系信息，不包含审计字段、删除标记和版本。停用项不可新选，原停用值或失效 ID 保留展示；取消弹窗不改变模型。继承 Element Plus 表单禁用与校验行为，失败保留已有值并允许重试。
+
+当前供应商档案只有一组主要联系信息，订单后续应保存必要的联系信息快照，选择器本身不写采购业务数据。
