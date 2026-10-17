@@ -219,20 +219,36 @@
           <strong>{{ totals?.grossAmount ?? '—' }}</strong>
         </span>
       </div>
-      <el-descriptions v-if="saved" title="维护记录" :column="2" border class="audit-info">
-        <el-descriptions-item label="创建人">{{ saved.createBy }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ saved.createTime }}</el-descriptions-item>
-        <el-descriptions-item label="修改人">{{ saved.updateBy || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="修改时间">{{ saved.updateTime || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="提交人／时间">
-          {{ saved.submittedBy || '—' }} {{ saved.submittedTime }}
-        </el-descriptions-item>
-        <el-descriptions-item label="审核人／时间">
-          {{ saved.reviewedBy || '—' }} {{ saved.reviewedTime }}
-        </el-descriptions-item>
-        <el-descriptions-item v-if="saved.reviewRemark" label="审核意见">{{ saved.reviewRemark }}</el-descriptions-item>
-        <el-descriptions-item v-if="saved.closeReason" label="关闭说明">{{ saved.closeReason }}</el-descriptions-item>
-      </el-descriptions>
+      <el-collapse
+        v-if="saved && route.name === 'PurchaseOrderDetail'"
+        v-model="operationInfoOpen"
+        accordion
+        class="audit-info"
+      >
+        <el-collapse-item title="操作信息" name="operation-info">
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="创建人">{{ saved.createBy }}</el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ saved.createTime }}</el-descriptions-item>
+            <el-descriptions-item label="修改人">{{ saved.updateBy || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="修改时间">{{ saved.updateTime || '—' }}</el-descriptions-item>
+            <el-descriptions-item label="提交人／时间">
+              {{ saved.submittedBy || '—' }} {{ saved.submittedTime }}
+            </el-descriptions-item>
+            <el-descriptions-item label="审核人／时间">
+              {{ saved.reviewedBy || '—' }} {{ saved.reviewedTime }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="saved.reviewRemark" label="审核意见" :span="2">
+              {{ saved.reviewRemark }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="saved.closedBy || saved.closedTime" label="关闭人／时间" :span="2">
+              {{ saved.closedBy || '—' }} {{ saved.closedTime }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="saved.closeReason" label="关闭说明" :span="2">
+              {{ saved.closeReason }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-collapse-item>
+      </el-collapse>
     </template>
   </div>
 </template>
@@ -300,6 +316,7 @@ const actions = computed(() =>
   saved.value ? orderStateActions[saved.value.status].filter((action) => can(action)) : []
 )
 const baseline = ref('')
+const operationInfoOpen = ref('')
 let loadSequence = 0,
   calculationSequence = 0,
   timer: ReturnType<typeof setTimeout> | undefined,
@@ -379,6 +396,7 @@ function apply(view: Order) {
 }
 async function load() {
   const current = ++loadSequence
+  operationInfoOpen.value = ''
   loading.value = true
   loaded.value = false
   calculationSequence++
