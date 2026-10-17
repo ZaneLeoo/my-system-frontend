@@ -95,6 +95,32 @@ export const constantRoutes = [
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [
   {
+    path: '/purchase/order-document',
+    component: Layout,
+    hidden: true,
+    permissions: ['purchase:order:add', 'purchase:order:query', 'purchase:order:edit'],
+    children: [
+      {
+        path: 'create',
+        component: () => import('@/views/purchase/order/editor.vue'),
+        name: 'PurchaseOrderCreate',
+        meta: { title: '新增采购订单', activeMenu: '/purchase/order', noCache: true }
+      },
+      {
+        path: ':id(\\d+)/edit',
+        component: () => import('@/views/purchase/order/editor.vue'),
+        name: 'PurchaseOrderEdit',
+        meta: { title: '编辑采购订单', activeMenu: '/purchase/order', noCache: true }
+      },
+      {
+        path: ':id(\\d+)/detail',
+        component: () => import('@/views/purchase/order/editor.vue'),
+        name: 'PurchaseOrderDetail',
+        meta: { title: '采购订单详情', activeMenu: '/purchase/order', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/system/user-auth',
     component: Layout,
     hidden: true,
