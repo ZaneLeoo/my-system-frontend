@@ -3,7 +3,7 @@
     <el-select
       v-bind="$attrs"
       :model-value="selectValue"
-      :multiple="Boolean(multiple)"
+      :multiple="multipleEnabled"
       :multiple-limit="100"
       filterable
       remote
@@ -37,7 +37,7 @@
     </el-button>
     <ItemPickerDialog
       v-model="dialogOpen"
-      :multiple="Boolean(multiple)"
+      :multiple="multipleEnabled"
       :purchase-only="Boolean(purchaseOnly)"
       :selected-ids="ids"
       :selected-records="selectedRecords"
@@ -56,6 +56,8 @@ import type { ItemPickerProps, ItemPickerValue, ItemReference } from './types'
 import ItemPickerDialog from './ItemPickerDialog.vue'
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(defineProps<ItemPickerProps<Multiple>>(), { disabled: undefined, clearable: true })
+// 泛型布尔属性在运行时可能保留为裸属性的空字符串，统一按 Vue 布尔属性语义处理。
+const multipleEnabled = computed(() => props.multiple != null && props.multiple !== false)
 const emit = defineEmits<{
   'update:modelValue': [value: ItemPickerValue<Multiple>]
   change: [records: ItemReference[]]
@@ -65,7 +67,7 @@ const { formItem } = useFormItem()
 const ids = computed<number[]>(() =>
   props.modelValue == null ? [] : Array.isArray(props.modelValue) ? [...new Set(props.modelValue)] : [props.modelValue]
 )
-const selectValue = computed(() => (props.multiple ? ids.value : ids.value[0]))
+const selectValue = computed(() => (multipleEnabled.value ? ids.value : ids.value[0]))
 const cached = shallowRef(new Map<number, ItemReference>())
 const choices = shallowRef<ItemReference[]>([])
 const selectedRecords = computed(() =>
@@ -158,7 +160,7 @@ function accept(records: ItemReference[]) {
   if (inheritedDisabled.value) return
   cache(records)
   const value = (
-    props.multiple ? records.map((row) => row.itemId) : (records[0]?.itemId ?? null)
+    multipleEnabled.value ? records.map((row) => row.itemId) : (records[0]?.itemId ?? null)
   ) as ItemPickerValue<Multiple>
   emit('update:modelValue', value)
   emit('change', records)
