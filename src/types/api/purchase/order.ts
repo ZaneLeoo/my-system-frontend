@@ -2,6 +2,12 @@ import type { PageQuery } from '@/types/api/common'
 
 export type PriceTaxMode = 'TAX_INCLUDED' | 'TAX_EXCLUDED'
 export type OrderStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'CLOSED'
+export type ArrivalProgress = 'NOT_ARRIVED' | 'PARTIALLY_ARRIVED' | 'FULLY_ARRIVED'
+export const arrivalProgressLabels: Record<ArrivalProgress, string> = {
+  NOT_ARRIVED: '未到货',
+  PARTIALLY_ARRIVED: '部分到货',
+  FULLY_ARRIVED: '全部到货'
+}
 export type OrderAction = 'submit' | 'withdraw' | 'approve' | 'reject' | 'close'
 export const orderStatusLabels: Record<OrderStatus, string> = {
   DRAFT: '草稿',
@@ -40,6 +46,9 @@ export interface OrderLineInput {
   remark: string
 }
 export interface OrderLine extends LineAmounts {
+  pendingArrivalQuantity: string
+  arrivedQuantity: string
+  availableQuantity: string
   lineId: number
   orderId: number
   lineNo: number
@@ -77,6 +86,7 @@ export interface SaveOrderRequest {
   lines: OrderLineInput[]
 }
 export interface Order extends OrderDefaults {
+  arrivalProgress: ArrivalProgress
   orderId: number
   orderNo: string
   orderDate: string

@@ -80,6 +80,9 @@
         </template>
       </vxe-column>
       <vxe-column field="buyerName" title="采购员" width="120" />
+      <vxe-column field="arrivalProgress" title="到货进度" width="120">
+        <template #default="{ row }">{{ progressLabel(row.arrivalProgress) }}</template>
+      </vxe-column>
       <vxe-column field="deptName" title="采购部门" width="150" />
       <vxe-column field="lineCount" title="明细行数" width="100" align="right" />
       <vxe-column field="netAmount" title="未税金额" width="160" align="right" />
@@ -130,8 +133,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { VxeTableInstance, VxeTableDefines, VxeColumnPropTypes, VxeColumnSlotTypes } from 'vxe-table'
 import SupplierPicker from '@/components/masterdata/SupplierPicker/index.vue'
 import { listOrders, deleteOrder } from '@/api/purchase/order'
-import { orderStatusLabels } from '@/types/api/purchase/order'
-import type { Order, OrderQuery, OrderSortField, OrderStatus } from '@/types/api/purchase/order'
+import { orderStatusLabels, arrivalProgressLabels } from '@/types/api/purchase/order'
+import type { Order, OrderQuery, OrderSortField, OrderStatus, ArrivalProgress } from '@/types/api/purchase/order'
 import { useVxe } from '@/plugins/vxe'
 import auth from '@/plugins/auth'
 useVxe()
@@ -155,6 +158,9 @@ let sequence = 0,
 const can = (suffix: string) => auth.hasPermi(`purchase:order:${suffix}`)
 function statusLabel(status: OrderStatus) {
   return orderStatusLabels[status]
+}
+function progressLabel(progress: ArrivalProgress) {
+  return arrivalProgressLabels[progress]
 }
 const numberFilters = computed<VxeColumnPropTypes.Filters>(() => [
   { label: '包含', value: 'contains', data: applied.value.orderNo ?? '', checked: Boolean(applied.value.orderNo) }

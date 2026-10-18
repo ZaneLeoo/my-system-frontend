@@ -4,10 +4,38 @@
       <div>
         <strong>{{ saved?.orderNo ?? '新增采购订单' }}</strong>
         <el-tag>{{ orderStatusLabels[saved?.status ?? 'DRAFT'] }}</el-tag>
+        <el-tag v-if="saved && readonly" type="info">{{ arrivalProgressLabels[saved.arrivalProgress] }}</el-tag>
       </div>
       <div class="document-actions">
         <el-button :disabled="busy" @click="router.push('/purchase/order')">返回列表</el-button>
         <el-button :disabled="busy" @click="reload">重新加载</el-button>
+        <el-button
+          v-if="saved && readonly && auth.hasPermi('purchase:arrival:list')"
+          :disabled="busy"
+          @click="router.push({ path: '/purchase/arrival', query: { orderId: saved.orderId } })"
+        >
+          关联到货单
+        </el-button>
+        <el-button
+          v-if="
+            saved?.status === 'APPROVED' &&
+            readonly &&
+            saved.arrivalProgress !== 'FULLY_ARRIVED' &&
+            auth.hasPermi('purchase:arrival:add') &&
+            auth.hasPermi('purchase:order:reference')
+          "
+          :disabled="busy"
+          type="primary"
+          plain
+          @click="
+            router.push({
+              path: '/purchase/arrival-document/create',
+              query: { orderId: saved.orderId, supplierId: saved.supplierId }
+            })
+          "
+        >
+          建立到货单
+        </el-button>
         <el-button v-if="!readonly && loaded" type="primary" :loading="busy" @click="save">保存草稿</el-button>
         <el-button
           v-if="saved?.status === 'DRAFT' && readonly && can('edit') && can('query')"
@@ -113,6 +141,9 @@
         <vxe-column field="itemName" title="料品名称" min-width="180" />
         <vxe-column field="specification" title="规格型号" min-width="160" />
         <vxe-column field="unitName" title="单位" width="100" />
+        <vxe-column v-if="readonly" field="arrivedQuantity" title="已确认到货" width="150" align="right" />
+        <vxe-column v-if="readonly" field="pendingArrivalQuantity" title="待审核到货" width="150" align="right" />
+        <vxe-column v-if="readonly" field="availableQuantity" title="可新增到货" width="150" align="right" />
         <vxe-column field="quantity" title="数量" width="160" align="right">
           <template #default="{ row, rowIndex }">
             <span v-if="readonly">{{ row.quantity }}</span>
@@ -271,7 +302,12 @@ import type {
   LineAmounts,
   OrderCalculation
 } from '@/types/api/purchase/order'
-import { orderStatusLabels, orderActionLabels, orderStateActions } from '@/types/api/purchase/order'
+import {
+  orderStatusLabels,
+  orderActionLabels,
+  orderStateActions,
+  arrivalProgressLabels
+} from '@/types/api/purchase/order'
 import { getOrder, getOrderDefaults, createOrder, updateOrder, calculateOrder, actOnOrder } from '@/api/purchase/order'
 import { useVxe } from '@/plugins/vxe'
 import auth from '@/plugins/auth'

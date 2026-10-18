@@ -95,6 +95,32 @@ export const constantRoutes = [
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [
   {
+    path: '/purchase/arrival-document',
+    component: Layout,
+    hidden: true,
+    permissions: ['purchase:arrival:add', 'purchase:arrival:query', 'purchase:arrival:edit'],
+    children: [
+      {
+        path: 'create',
+        component: () => import('@/views/purchase/arrival/editor.vue'),
+        name: 'PurchaseArrivalCreate',
+        meta: { title: '新增采购到货单', activeMenu: '/purchase/arrival', noCache: true }
+      },
+      {
+        path: ':id(\\d+)/edit',
+        component: () => import('@/views/purchase/arrival/editor.vue'),
+        name: 'PurchaseArrivalEdit',
+        meta: { title: '编辑采购到货单', activeMenu: '/purchase/arrival', noCache: true }
+      },
+      {
+        path: ':id(\\d+)/detail',
+        component: () => import('@/views/purchase/arrival/editor.vue'),
+        name: 'PurchaseArrivalDetail',
+        meta: { title: '采购到货单详情', activeMenu: '/purchase/arrival', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/masterdata/warehouse-locations',
     component: Layout,
     hidden: true,
