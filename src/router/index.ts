@@ -121,6 +121,32 @@ export const dynamicRoutes = [
     ]
   },
   {
+    path: '/purchase/receipt-document',
+    component: Layout,
+    hidden: true,
+    permissions: ['purchase:receipt:add', 'purchase:receipt:query', 'purchase:receipt:edit'],
+    children: [
+      {
+        path: 'create',
+        component: () => import('@/views/purchase/receipt/editor.vue'),
+        name: 'PurchaseReceiptCreate',
+        meta: { title: '新增采购入库单', activeMenu: '/purchase/receipt', noCache: true }
+      },
+      {
+        path: ':id(\\d+)/edit',
+        component: () => import('@/views/purchase/receipt/editor.vue'),
+        name: 'PurchaseReceiptEdit',
+        meta: { title: '编辑采购入库单', activeMenu: '/purchase/receipt', noCache: true }
+      },
+      {
+        path: ':id(\\d+)/detail',
+        component: () => import('@/views/purchase/receipt/editor.vue'),
+        name: 'PurchaseReceiptDetail',
+        meta: { title: '采购入库单详情', activeMenu: '/purchase/receipt', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/masterdata/warehouse-locations',
     component: Layout,
     hidden: true,

@@ -55,7 +55,16 @@ export interface ArrivalLineInput {
   quantity: string
   remark: string
 }
+export type ReceiptProgress = 'NOT_RECEIVED' | 'PARTIALLY_RECEIVED' | 'FULLY_RECEIVED'
+export const receiptProgressLabels: Record<ReceiptProgress, string> = {
+  NOT_RECEIVED: '未入库',
+  PARTIALLY_RECEIVED: '部分入库',
+  FULLY_RECEIVED: '全部入库'
+}
 export interface ArrivalLine extends ArrivalLineInput, ArrivalQuantities {
+  pendingReceiptQuantity: string
+  receivedQuantity: string
+  availableReceiptQuantity: string
   lineId: number
   arrivalId: number
   lineNo: number
@@ -81,6 +90,7 @@ export interface SaveArrivalRequest {
   lines: ArrivalLineInput[]
 }
 export interface Arrival extends ArrivalDefaults {
+  receiptProgress: ReceiptProgress
   arrivalId: number
   arrivalNo: string
   arrivalDate: string

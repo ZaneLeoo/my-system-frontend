@@ -4,10 +4,29 @@
       <div>
         <strong>{{ saved?.arrivalNo ?? '新增采购到货单' }}</strong>
         <el-tag>{{ arrivalStatusLabels[saved?.status ?? 'DRAFT'] }}</el-tag>
+        <el-tag v-if="saved" type="info">{{ receiptProgressLabels[saved.receiptProgress] }}</el-tag>
       </div>
       <div>
         <el-button :disabled="busy" @click="router.push('/purchase/arrival')">返回列表</el-button>
         <el-button :disabled="busy" @click="reload">重新加载</el-button>
+        <el-button
+          v-if="
+            saved?.status === 'APPROVED' &&
+            auth.hasPermi('purchase:receipt:add') &&
+            auth.hasPermi('purchase:arrival:reference')
+          "
+          :disabled="busy"
+          @click="router.push({ path: '/purchase/receipt-document/create', query: { arrivalId: saved.arrivalId } })"
+        >
+          生成入库单
+        </el-button>
+        <el-button
+          v-if="saved && auth.hasPermi('purchase:receipt:list')"
+          :disabled="busy"
+          @click="router.push({ path: '/purchase/receipt', query: { arrivalId: saved.arrivalId } })"
+        >
+          关联入库单
+        </el-button>
         <el-button v-if="loaded && !readonly" type="primary" :loading="busy" @click="save">保存草稿</el-button>
         <el-button
           v-if="saved?.status === 'DRAFT' && readonly && can('edit') && can('query')"
@@ -129,6 +148,9 @@
         <vxe-column field="arrivedQuantity" title="累计确认到货" width="150" align="right" />
         <vxe-column field="pendingArrivalQuantity" title="待审核到货" width="150" align="right" />
         <vxe-column field="availableQuantity" title="当前可新增到货" width="160" align="right" />
+        <vxe-column field="pendingReceiptQuantity" title="待审核入库" width="140" align="right" />
+        <vxe-column field="receivedQuantity" title="已入库" width="140" align="right" />
+        <vxe-column field="availableReceiptQuantity" title="可新增入库" width="140" align="right" />
         <vxe-column field="remark" title="行备注" min-width="200">
           <template #default="{ row }">
             <span v-if="readonly">{{ row.remark }}</span>
@@ -195,7 +217,12 @@ import {
   actOnArrival,
   searchOrderLineReferences
 } from '@/api/purchase/arrival'
-import { arrivalStatusLabels, arrivalActionLabels, arrivalStateActions } from '@/types/api/purchase/arrival'
+import {
+  arrivalStatusLabels,
+  arrivalActionLabels,
+  arrivalStateActions,
+  receiptProgressLabels
+} from '@/types/api/purchase/arrival'
 import type {
   Arrival,
   ArrivalDefaults,
@@ -356,7 +383,10 @@ function addSources(records: OrderLineReference[]) {
       ...source,
       rowKey: crypto.randomUUID(),
       quantity: cleanDecimal(source.availableQuantity),
-      remark: ''
+      remark: '',
+      pendingReceiptQuantity: '0',
+      receivedQuantity: '0',
+      availableReceiptQuantity: '0'
     })
 }
 async function changeSupplier() {

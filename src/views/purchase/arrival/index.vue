@@ -95,6 +95,9 @@
           </el-tag>
         </template>
       </vxe-column>
+      <vxe-column field="receiptProgress" title="入库进度" width="120">
+        <template #default="{ row }">{{ progressLabel(row.receiptProgress) }}</template>
+      </vxe-column>
       <vxe-column field="warehouseName" title="收货仓库" min-width="160" />
       <vxe-column field="supplierDeliveryNo" title="供应商送货单号" min-width="170" />
       <vxe-column field="receiverName" title="收货经办人" width="120" />
@@ -146,7 +149,7 @@ import type { VxeTableInstance, VxeTableDefines, VxeColumnPropTypes, VxeColumnSl
 import WarehousePicker from '@/components/masterdata/WarehousePicker/index.vue'
 import SupplierPicker from '@/components/masterdata/SupplierPicker/index.vue'
 import { listArrivals, deleteArrival } from '@/api/purchase/arrival'
-import { arrivalStatusLabels } from '@/types/api/purchase/arrival'
+import { arrivalStatusLabels, receiptProgressLabels } from '@/types/api/purchase/arrival'
 import type { Arrival, ArrivalQuery, ArrivalSortField, ArrivalStatus } from '@/types/api/purchase/arrival'
 import { useVxe } from '@/plugins/vxe'
 import auth from '@/plugins/auth'
@@ -180,6 +183,9 @@ const applied = ref<ArrivalQuery>({ pageNum: 1, pageSize: 20, orderId: orderCont
 let sequence = 0,
   activated = false
 const can = (suffix: string) => auth.hasPermi(`purchase:arrival:${suffix}`)
+function progressLabel(value: keyof typeof receiptProgressLabels) {
+  return receiptProgressLabels[value]
+}
 function statusLabel(status: ArrivalStatus) {
   return arrivalStatusLabels[status]
 }
