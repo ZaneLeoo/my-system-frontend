@@ -92,17 +92,9 @@
       <vxe-column field="tax" title="税额" width="150" align="right" />
       <vxe-column field="grossAmount" title="价税合计" width="170" align="right" sortable />
       <vxe-column field="updateTime" title="最后修改时间" width="200" sortable />
-      <vxe-column title="操作" width="250" fixed="right">
+      <vxe-column title="操作" width="190" fixed="right">
         <template #default="{ row }">
           <el-button v-if="can('query')" link type="primary" @click="open(row)">详情</el-button>
-          <el-button
-            v-if="auth.hasPermi('purchase:receipt:list')"
-            link
-            type="primary"
-            @click="router.push({ path: '/purchase/receipt', query: { orderId: row.orderId } })"
-          >
-            入库单
-          </el-button>
           <el-button
             v-if="row.status === 'DRAFT' && can('edit') && can('query')"
             link
