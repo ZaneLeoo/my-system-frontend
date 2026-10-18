@@ -23,7 +23,7 @@ export interface ArrivalLineReference extends ReceiptQuantities {
   supplierId: number
   supplierCode: string
   supplierName: string
-  warehouseId: number
+  warehouseId: number | null
   warehouseCode: string
   warehouseName: string
   locationEnabled: boolean

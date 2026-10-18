@@ -100,7 +100,9 @@
       <vxe-column field="receiptProgress" title="入库进度" width="120">
         <template #default="{ row }">{{ progressLabel(row.receiptProgress) }}</template>
       </vxe-column>
-      <vxe-column field="warehouseName" title="预计入库仓库" min-width="160" />
+      <vxe-column field="warehouseName" title="预计入库仓库" min-width="160">
+        <template #default="{ row }">{{ row.warehouseName || '未指定' }}</template>
+      </vxe-column>
       <vxe-column field="supplierDeliveryNo" title="供应商送货单号" min-width="170" />
       <vxe-column field="receiverName" title="收货经办人" width="120" />
       <vxe-column field="deptName" title="经办部门" width="150" />

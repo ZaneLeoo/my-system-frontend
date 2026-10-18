@@ -98,7 +98,7 @@ export interface Arrival extends ArrivalDefaults {
   supplierCode: string
   supplierName: string
   supplierDeliveryNo: string
-  warehouseId: number
+  warehouseId: number | null
   warehouseCode: string
   warehouseName: string
   status: ArrivalStatus

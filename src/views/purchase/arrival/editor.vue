@@ -64,8 +64,11 @@
             </div>
           </el-form-item>
           <el-form-item label="预计入库仓库" prop="warehouseId">
-            <el-input v-if="readonly" :model-value="`${saved?.warehouseCode} / ${saved?.warehouseName}`" />
-            <WarehousePicker v-else v-model="form.warehouseId" />
+            <el-input
+              v-if="readonly"
+              :model-value="saved?.warehouseId == null ? '未指定' : `${saved.warehouseCode} / ${saved.warehouseName}`"
+            />
+            <WarehousePicker v-else v-model="form.warehouseId" placeholder="可不选，入库时逐行确定仓库" />
           </el-form-item>
           <el-form-item label="供应商送货单号">
             <el-input v-model="form.supplierDeliveryNo" maxlength="100" />
@@ -269,8 +272,7 @@ const actions = computed(() => (saved.value && loaded.value ? arrivalStateAction
 const dirty = computed(() => loaded.value && !readonly.value && snapshot() !== baseline.value)
 const rules: FormRules<Header> = {
   arrivalDate: [{ required: true, message: '请选择到货日期', trigger: 'change' }],
-  supplierId: [{ required: true, message: '请选择供应商', trigger: 'change' }],
-  warehouseId: [{ required: true, message: '请选择预计入库仓库', trigger: 'change' }]
+  supplierId: [{ required: true, message: '请选择供应商', trigger: 'change' }]
 }
 let loadSequence = 0,
   prefillSequence = 0,

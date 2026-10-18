@@ -50,7 +50,9 @@
       <vxe-column type="checkbox" width="50" fixed="left" />
       <vxe-column field="arrivalNo" title="采购到货单号" width="230" sortable />
       <vxe-column field="supplierName" title="供应商" width="160" />
-      <vxe-column field="warehouseName" title="预计入库仓库" width="140" />
+      <vxe-column field="warehouseName" title="预计入库仓库" width="140">
+        <template #default="{ row }">{{ row.warehouseName || '未指定' }}</template>
+      </vxe-column>
       <vxe-column field="arrivalLineNo" title="来源行号" width="90" />
       <vxe-column field="itemCode" title="料品编码" width="160" sortable />
       <vxe-column field="itemName" title="料品名称" min-width="170" sortable />
