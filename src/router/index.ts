@@ -95,6 +95,20 @@ export const constantRoutes = [
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [
   {
+    path: '/masterdata/warehouse-locations',
+    component: Layout,
+    hidden: true,
+    permissions: ['masterdata:location:list'],
+    children: [
+      {
+        path: ':warehouseId(\\d+)',
+        component: () => import('@/views/masterdata/location/index.vue'),
+        name: 'MasterDataWarehouseLocations',
+        meta: { title: '仓库货位', activeMenu: '/masterdata/warehouse', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/purchase/order-document',
     component: Layout,
     hidden: true,
