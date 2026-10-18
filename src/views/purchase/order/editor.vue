@@ -5,10 +5,20 @@
         <strong>{{ saved?.orderNo ?? '新增采购订单' }}</strong>
         <el-tag>{{ orderStatusLabels[saved?.status ?? 'DRAFT'] }}</el-tag>
         <el-tag v-if="saved && readonly" type="info">{{ arrivalProgressLabels[saved.arrivalProgress] }}</el-tag>
+        <el-tooltip v-if="saved && readonly" content="以订单各行订购数量判断入库进度，待审核入库不计入已入库">
+          <el-tag type="info">{{ receiptProgressLabels[saved.receiptProgress] }}</el-tag>
+        </el-tooltip>
       </div>
       <div class="document-actions">
         <el-button :disabled="busy" @click="router.push('/purchase/order')">返回列表</el-button>
         <el-button :disabled="busy" @click="reload">重新加载</el-button>
+        <el-button
+          v-if="saved && readonly && auth.hasPermi('purchase:receipt:list')"
+          :disabled="busy"
+          @click="router.push({ path: '/purchase/receipt', query: { orderId: saved.orderId } })"
+        >
+          关联入库单
+        </el-button>
         <el-button
           v-if="saved && readonly && auth.hasPermi('purchase:arrival:list')"
           :disabled="busy"
@@ -144,6 +154,13 @@
         <vxe-column v-if="readonly" field="arrivedQuantity" title="已确认到货" width="150" align="right" />
         <vxe-column v-if="readonly" field="pendingArrivalQuantity" title="待审核到货" width="150" align="right" />
         <vxe-column v-if="readonly" field="availableQuantity" title="可新增到货" width="150" align="right" />
+        <vxe-column v-if="readonly" field="pendingReceiptQuantity" title="待审核入库" width="150" align="right" />
+        <vxe-column v-if="readonly" field="receivedQuantity" title="累计已入库" width="150" align="right" />
+        <vxe-column v-if="readonly" field="arrivedNotReceivedQuantity" title="已到货未入库" width="170" align="right">
+          <template #header>
+            <el-tooltip content="累计已到货减累计已入库，包含待审核入库数量"><span>已到货未入库</span></el-tooltip>
+          </template>
+        </vxe-column>
         <vxe-column field="quantity" title="数量" width="160" align="right">
           <template #default="{ row, rowIndex }">
             <span v-if="readonly">{{ row.quantity }}</span>
@@ -306,7 +323,8 @@ import {
   orderStatusLabels,
   orderActionLabels,
   orderStateActions,
-  arrivalProgressLabels
+  arrivalProgressLabels,
+  receiptProgressLabels
 } from '@/types/api/purchase/order'
 import { getOrder, getOrderDefaults, createOrder, updateOrder, calculateOrder, actOnOrder } from '@/api/purchase/order'
 import { useVxe } from '@/plugins/vxe'

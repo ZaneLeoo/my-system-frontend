@@ -1,3 +1,5 @@
+import type { ReceiptProgress } from './arrival'
+export { receiptProgressLabels } from './arrival'
 import type { PageQuery } from '@/types/api/common'
 
 export type PriceTaxMode = 'TAX_INCLUDED' | 'TAX_EXCLUDED'
@@ -46,6 +48,9 @@ export interface OrderLineInput {
   remark: string
 }
 export interface OrderLine extends LineAmounts {
+  pendingReceiptQuantity: string
+  receivedQuantity: string
+  arrivedNotReceivedQuantity: string
   pendingArrivalQuantity: string
   arrivedQuantity: string
   availableQuantity: string
@@ -86,6 +91,7 @@ export interface SaveOrderRequest {
   lines: OrderLineInput[]
 }
 export interface Order extends OrderDefaults {
+  receiptProgress: ReceiptProgress
   arrivalProgress: ArrivalProgress
   orderId: number
   orderNo: string

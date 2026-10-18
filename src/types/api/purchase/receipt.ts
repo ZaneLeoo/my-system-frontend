@@ -107,6 +107,7 @@ export interface Receipt extends ReceiptDefaults {
 }
 export type ReceiptSortField = 'receiptNo' | 'receiptDate' | 'updateTime'
 export interface ReceiptQuery extends PageQuery {
+  orderId?: number
   receiptNo?: string
   supplierId?: number
   warehouseId?: number

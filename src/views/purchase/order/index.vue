@@ -83,15 +83,26 @@
       <vxe-column field="arrivalProgress" title="到货进度" width="120">
         <template #default="{ row }">{{ progressLabel(row.arrivalProgress) }}</template>
       </vxe-column>
+      <vxe-column field="receiptProgress" title="入库进度" width="120">
+        <template #default="{ row }">{{ receiptProgressLabel(row.receiptProgress) }}</template>
+      </vxe-column>
       <vxe-column field="deptName" title="采购部门" width="150" />
       <vxe-column field="lineCount" title="明细行数" width="100" align="right" />
       <vxe-column field="netAmount" title="未税金额" width="160" align="right" />
       <vxe-column field="tax" title="税额" width="150" align="right" />
       <vxe-column field="grossAmount" title="价税合计" width="170" align="right" sortable />
       <vxe-column field="updateTime" title="最后修改时间" width="200" sortable />
-      <vxe-column title="操作" width="190" fixed="right">
+      <vxe-column title="操作" width="250" fixed="right">
         <template #default="{ row }">
           <el-button v-if="can('query')" link type="primary" @click="open(row)">详情</el-button>
+          <el-button
+            v-if="auth.hasPermi('purchase:receipt:list')"
+            link
+            type="primary"
+            @click="router.push({ path: '/purchase/receipt', query: { orderId: row.orderId } })"
+          >
+            入库单
+          </el-button>
           <el-button
             v-if="row.status === 'DRAFT' && can('edit') && can('query')"
             link
@@ -133,9 +144,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { VxeTableInstance, VxeTableDefines, VxeColumnPropTypes, VxeColumnSlotTypes } from 'vxe-table'
 import SupplierPicker from '@/components/masterdata/SupplierPicker/index.vue'
 import { listOrders, deleteOrder } from '@/api/purchase/order'
-import { orderStatusLabels, arrivalProgressLabels } from '@/types/api/purchase/order'
+import { orderStatusLabels, arrivalProgressLabels, receiptProgressLabels } from '@/types/api/purchase/order'
 import type { Order, OrderQuery, OrderSortField, OrderStatus, ArrivalProgress } from '@/types/api/purchase/order'
 import { useVxe } from '@/plugins/vxe'
+import type { ReceiptProgress } from '@/types/api/purchase/arrival'
 import auth from '@/plugins/auth'
 useVxe()
 const router = useRouter(),
@@ -158,6 +170,9 @@ let sequence = 0,
 const can = (suffix: string) => auth.hasPermi(`purchase:order:${suffix}`)
 function statusLabel(status: OrderStatus) {
   return orderStatusLabels[status]
+}
+function receiptProgressLabel(progress: ReceiptProgress) {
+  return receiptProgressLabels[progress]
 }
 function progressLabel(progress: ArrivalProgress) {
   return arrivalProgressLabels[progress]

@@ -1,8 +1,12 @@
 <template>
   <div class="app-container">
     <el-alert
-      v-if="arrivalContext"
-      :title="`当前显示来源采购到货单 #${arrivalContext} 的入库单`"
+      v-if="arrivalContext || orderContext"
+      :title="
+        orderContext
+          ? `当前显示来源采购订单 #${orderContext} 的入库单`
+          : `当前显示来源采购到货单 #${arrivalContext} 的入库单`
+      "
       type="info"
       show-icon
       style="margin-bottom: 16px"
@@ -151,6 +155,10 @@ import { useVxe } from '@/plugins/vxe'
 import auth from '@/plugins/auth'
 useVxe()
 const route = useRoute()
+const orderContext = computed(() => {
+  const id = Number(route.query.orderId)
+  return Number.isSafeInteger(id) && id > 0 ? id : undefined
+})
 const arrivalContext = computed(() => {
   const id = Number(route.query.arrivalId)
   return Number.isSafeInteger(id) && id > 0 ? id : undefined
@@ -174,7 +182,12 @@ const draft = reactive<{
 })
 const dates = ref<[string, string] | null>(null),
   page = reactive({ pageNum: 1, pageSize: 20 })
-const applied = ref<ReceiptQuery>({ pageNum: 1, pageSize: 20, arrivalId: arrivalContext.value }),
+const applied = ref<ReceiptQuery>({
+    pageNum: 1,
+    pageSize: 20,
+    arrivalId: arrivalContext.value,
+    orderId: orderContext.value
+  }),
   numberDraft = ref('')
 let sequence = 0,
   activated = false
@@ -256,7 +269,12 @@ async function reset() {
   draft.status = undefined
   dates.value = null
   await table.value?.closeFilter()
-  await load({ pageNum: 1, pageSize: applied.value.pageSize, arrivalId: arrivalContext.value })
+  await load({
+    pageNum: 1,
+    pageSize: applied.value.pageSize,
+    arrivalId: arrivalContext.value,
+    orderId: orderContext.value
+  })
 }
 function changePage(pageNum: number, pageSize: number) {
   void load({ ...applied.value, pageNum: pageSize === applied.value.pageSize ? pageNum : 1, pageSize })
@@ -314,7 +332,10 @@ async function remove(row: Receipt) {
     removing.value = null
   }
 }
-watch(arrivalContext, (id) => void load({ ...applied.value, arrivalId: id, pageNum: 1 }))
+watch(
+  [arrivalContext, orderContext],
+  ([arrivalId, orderId]) => void load({ ...applied.value, arrivalId, orderId, pageNum: 1 })
+)
 onMounted(() => void load())
 onActivated(() => {
   if (activated) void load()
