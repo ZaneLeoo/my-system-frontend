@@ -23,7 +23,7 @@
       show-overflow
       max-height="420"
       :row-config="{ keyField: 'unitId', isHover: true }"
-      :radio-config="{ checkMethod: selectable }"
+      :radio-config="{ trigger: 'row', checkMethod: selectable }"
       :column-config="{ resizable: true }"
       :sort-config="{ remote: true }"
       @radio-change="selectRow"

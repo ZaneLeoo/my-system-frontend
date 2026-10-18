@@ -51,6 +51,8 @@
           show-overflow
           max-height="440"
           :row-config="{ keyField: 'itemId', isHover: true }"
+          :radio-config="{ trigger: 'row', checkMethod: selectable }"
+          :checkbox-config="{ trigger: 'row', checkMethod: selectable }"
           :column-config="{ resizable: true }"
           :sort-config="{ remote: true }"
           @sort-change="sort"
@@ -228,6 +230,14 @@ function sort({ field, order }: VxeTableDefines.SortChangeEventParams<ItemRefere
   if (field !== 'itemCode' && field !== 'itemName' && field !== 'specification') return
   void load({ ...applied.value, sortField: order ? field : undefined, sortDirection: order || undefined, pageNum: 1 })
 }
+function selectable({ row }: { row: ItemReference }) {
+  return (
+    !loading.value &&
+    !confirming.value &&
+    row.status === '0' &&
+    (!(props.purchaseOnly || applied.value.purchaseOnly) || row.purchaseEnabled)
+  )
+}
 function checkboxChanged({ row, checked }: VxeTableDefines.CheckboxChangeEventParams<ItemReference>) {
   const next = new Map(selection.value)
   if (checked) {
@@ -243,7 +253,7 @@ function checkboxChanged({ row, checked }: VxeTableDefines.CheckboxChangeEventPa
 function checkboxAll({ checked }: VxeTableDefines.CheckboxAllEventParams<ItemReference>) {
   const next = new Map(selection.value)
   rows.value.forEach((row) => {
-    if (checked) next.set(row.itemId, row)
+    if (checked && selectable({ row })) next.set(row.itemId, row)
     else next.delete(row.itemId)
   })
   if (next.size > 100) {
@@ -257,7 +267,7 @@ function radioChanged({ row }: VxeTableDefines.RadioChangeEventParams<ItemRefere
   selection.value = new Map([[row.itemId, row]])
 }
 function doubleClick({ row }: VxeTableDefines.CellDblclickEventParams<ItemReference>) {
-  if (!props.multiple) {
+  if (!props.multiple && selectable({ row })) {
     selection.value = new Map([[row.itemId, row]])
     void confirm()
   }

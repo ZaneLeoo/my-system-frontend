@@ -10,8 +10,12 @@
     />
     <el-form inline @submit.prevent="search">
       <el-form-item label="料品"><el-input v-model="draft.keyword" placeholder="编码或名称" clearable /></el-form-item>
-      <el-form-item label="仓库编码"><el-input v-model="draft.warehouseCode" clearable /></el-form-item>
-      <el-form-item label="货位编码"><el-input v-model="draft.locationCode" clearable /></el-form-item>
+      <el-form-item label="仓库编码">
+        <el-input v-model="draft.warehouseCode" placeholder="完整编码，精确匹配" clearable />
+      </el-form-item>
+      <el-form-item label="货位编码">
+        <el-input v-model="draft.locationCode" placeholder="完整编码，精确匹配" clearable />
+      </el-form-item>
       <el-form-item label="入库单号"><el-input v-model="draft.receiptNo" clearable /></el-form-item>
       <el-form-item label="业务类型">
         <el-select v-model="draft.businessType" clearable style="width: 180px">

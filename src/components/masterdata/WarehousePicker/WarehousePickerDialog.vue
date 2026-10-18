@@ -25,6 +25,7 @@
       show-overflow
       max-height="420"
       :row-config="{ keyField: 'warehouseId', isHover: true }"
+      :radio-config="{ trigger: 'row', checkMethod: selectable }"
       :column-config="{ resizable: true }"
       :sort-config="{ remote: true }"
       @sort-change="sort"
@@ -140,11 +141,14 @@ function sort({ field, order }: VxeTableDefines.SortChangeEventParams<WarehouseR
   if (field !== 'warehouseCode' && field !== 'warehouseName') return
   void load({ ...applied.value, pageNum: 1, sortField: order ? field : undefined, sortDirection: order || undefined })
 }
+function selectable({ row }: { row: WarehouseReference }) {
+  return !loading.value && !confirming.value && row.status === '0'
+}
 function selectRow({ row }: VxeTableDefines.RadioChangeEventParams<WarehouseReference>) {
   chosen.value = row
 }
 function doubleClick({ row }: VxeTableDefines.CellDblclickEventParams<WarehouseReference>) {
-  if (row) {
+  if (row && selectable({ row })) {
     chosen.value = row
     void confirm()
   }

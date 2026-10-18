@@ -41,7 +41,7 @@
       height="400"
       :row-config="{ keyField: 'orderLineId', isHover: true }"
       :column-config="{ resizable: true }"
-      :checkbox-config="{ checkMethod: selectable }"
+      :checkbox-config="{ trigger: 'row', checkMethod: selectable }"
       :sort-config="{ remote: true, trigger: 'cell' }"
       @checkbox-change="checkboxChanged"
       @checkbox-all="checkboxAll"
@@ -117,7 +117,7 @@ let sequence = 0,
   session = 0,
   alive = true
 function selectable({ row }: { row: OrderLineReference }) {
-  return !props.excludedIds.includes(row.orderLineId) && !confirming.value
+  return !props.excludedIds.includes(row.orderLineId) && !confirming.value && !loading.value
 }
 async function sync() {
   await nextTick()

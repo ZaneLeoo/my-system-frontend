@@ -2,8 +2,12 @@
   <div class="app-container">
     <el-form inline @submit.prevent="search">
       <el-form-item label="料品"><el-input v-model="draft.keyword" placeholder="编码或名称" clearable /></el-form-item>
-      <el-form-item label="仓库编码"><el-input v-model="draft.warehouseCode" clearable /></el-form-item>
-      <el-form-item label="货位编码"><el-input v-model="draft.locationCode" clearable /></el-form-item>
+      <el-form-item label="仓库编码">
+        <el-input v-model="draft.warehouseCode" placeholder="完整编码，精确匹配" clearable />
+      </el-form-item>
+      <el-form-item label="货位编码">
+        <el-input v-model="draft.locationCode" placeholder="完整编码，精确匹配" clearable />
+      </el-form-item>
       <el-form-item><el-checkbox v-model="draft.onlyPositive">仅有库存</el-checkbox></el-form-item>
       <el-form-item>
         <el-button type="primary" native-type="submit" :loading="loading">查询</el-button>

@@ -41,7 +41,7 @@
       height="400"
       :row-config="{ keyField: 'arrivalLineId', isHover: true }"
       :column-config="{ resizable: true }"
-      :checkbox-config="{ checkMethod: selectable }"
+      :checkbox-config="{ trigger: 'row', checkMethod: selectable }"
       :sort-config="{ remote: true, trigger: 'cell' }"
       @checkbox-change="checkboxChanged"
       @checkbox-all="checkboxAll"
@@ -125,6 +125,7 @@ function selectable({ row }: { row: ArrivalLineReference }) {
   return (
     !props.excludedIds.includes(row.arrivalLineId) &&
     !confirming.value &&
+    !loading.value &&
     (!first || row.supplierId === first.supplierId)
   )
 }

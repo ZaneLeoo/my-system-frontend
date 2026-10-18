@@ -25,6 +25,7 @@
       show-overflow
       max-height="420"
       :row-config="{ keyField: 'locationId', isHover: true }"
+      :radio-config="{ trigger: 'row', checkMethod: selectable }"
       :column-config="{ resizable: true }"
       :sort-config="{ remote: true }"
       @sort-change="sort"
@@ -141,11 +142,14 @@ function sort({ field, order }: VxeTableDefines.SortChangeEventParams<LocationRe
   if (field !== 'locationCode' && field !== 'locationName') return
   void load({ ...applied.value, pageNum: 1, sortField: order ? field : undefined, sortDirection: order || undefined })
 }
+function selectable({ row }: { row: LocationReference }) {
+  return !loading.value && !confirming.value && row.status === '0'
+}
 function selectRow({ row }: VxeTableDefines.RadioChangeEventParams<LocationReference>) {
   chosen.value = row
 }
 function doubleClick({ row }: VxeTableDefines.CellDblclickEventParams<LocationReference>) {
-  if (row) {
+  if (row && selectable({ row })) {
     chosen.value = row
     void confirm()
   }
