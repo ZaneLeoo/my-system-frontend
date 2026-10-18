@@ -40,9 +40,6 @@
           <el-form-item label="供应商" prop="supplierId">
             <el-input :model-value="contextNames.supplier" readonly placeholder="参照到货单后带入" />
           </el-form-item>
-          <el-form-item label="入库仓库" prop="warehouseId">
-            <el-input :model-value="contextNames.warehouse" readonly placeholder="沿用来源到货仓库" />
-          </el-form-item>
           <el-form-item label="收货经办人"><el-input :model-value="defaults?.receiverName" disabled /></el-form-item>
           <el-form-item label="经办部门"><el-input :model-value="defaults?.deptName" disabled /></el-form-item>
         </div>
@@ -60,8 +57,8 @@
         >
           参照采购到货单
         </el-button>
-        <el-button v-if="!readonly && rows.length" :disabled="busy" @click="changeContext">更换供应商／仓库</el-button>
-        <span>{{ rows.length }} / 200 行 · 提交占用到货额度，审核增加库存</span>
+        <el-button v-if="!readonly && rows.length" :disabled="busy" @click="changeContext">更换供应商</el-button>
+        <span>{{ rows.length }} / 200 行 · 预计入库仓库仅作默认值，实际仓库按行选择</span>
       </div>
       <el-alert
         v-if="sourceFailed"
@@ -91,10 +88,22 @@
         <vxe-column field="itemName" title="料品名称" min-width="180" />
         <vxe-column field="specification" title="规格" min-width="150" />
         <vxe-column field="unitName" title="单位" width="100" />
-        <vxe-column v-if="locationEnabled" field="locationName" title="入库货位" width="240">
+        <vxe-column field="warehouseName" title="实际入库仓库" width="290">
           <template #default="{ row }">
-            <span v-if="readonly">{{ row.locationCode }} / {{ row.locationName }}</span>
-            <LocationPicker v-else v-model="row.locationId" :warehouse-id="form.warehouseId" :disabled="busy" />
+            <span v-if="readonly">{{ row.warehouseCode }} / {{ row.warehouseName }}</span>
+            <WarehousePicker
+              v-else
+              v-model="row.warehouseId"
+              :disabled="busy"
+              @change="warehouseChanged(row, $event)"
+            />
+          </template>
+        </vxe-column>
+        <vxe-column v-if="rows.some((row) => row.locationEnabled)" field="locationName" title="入库货位" width="260">
+          <template #default="{ row }">
+            <span v-if="!row.locationEnabled">—</span>
+            <span v-else-if="readonly">{{ row.locationCode }} / {{ row.locationName }}</span>
+            <LocationPicker v-else v-model="row.locationId" :warehouse-id="row.warehouseId" :disabled="busy" />
           </template>
         </vxe-column>
         <vxe-column field="quantity" title="本次入库数量" width="170" align="right">
@@ -150,9 +159,7 @@
         </vxe-column>
         <vxe-column v-if="!readonly" title="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="locationEnabled" link :disabled="busy || rows.length >= 200" @click="split(row)">
-              拆分货位
-            </el-button>
+            <el-button link :disabled="busy || rows.length >= 200" @click="split(row)">拆分</el-button>
             <el-button link :disabled="busy" @click="move(row, -1)">上移</el-button>
             <el-button link :disabled="busy" @click="move(row, 1)">下移</el-button>
             <el-button link type="danger" :disabled="busy" @click="removeRow(row)">删除</el-button>
@@ -188,7 +195,6 @@
     <PurchaseArrivalLinePicker
       v-model="sourceOpen"
       :supplier-id="form.supplierId"
-      :warehouse-id="form.warehouseId"
       :excluded-ids="rows.map((row) => row.arrivalLineId)"
       :max-selection="200 - rows.length"
       @confirm="addSources"
@@ -201,6 +207,8 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vu
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus/es/components/form'
 import type { VxeTableDefines, VxeTableInstance } from 'vxe-table'
+import WarehousePicker from '@/components/masterdata/WarehousePicker/index.vue'
+import type { WarehouseReference } from '@/types/api/masterdata/storage-reference'
 import LocationPicker from '@/components/masterdata/LocationPicker/index.vue'
 
 import PurchaseArrivalLinePicker from '@/components/purchase/PurchaseArrivalLinePicker/index.vue'
@@ -226,7 +234,11 @@ import auth from '@/plugins/auth'
 import { useVxe } from '@/plugins/vxe'
 useVxe()
 type Header = Omit<SaveReceiptRequest, 'receiptId' | 'version' | 'lines'>
-type LineDraft = Omit<ReceiptLine, 'lineId' | 'receiptId' | 'lineNo'> & { lineId?: number; rowKey: string }
+type LineDraft = Omit<ReceiptLine, 'lineId' | 'receiptId' | 'lineNo' | 'warehouseId'> & {
+  lineId?: number
+  rowKey: string
+  warehouseId: number | null
+}
 const route = useRoute(),
   router = useRouter()
 const formRef = ref<FormInstance>(),
@@ -244,11 +256,9 @@ const loading = ref(false),
 const form = reactive<Header>({
   receiptDate: today(),
   supplierId: null,
-  warehouseId: null,
   remark: ''
 })
-const locationEnabled = ref(false)
-const contextNames = reactive({ supplier: '', warehouse: '' })
+const contextNames = reactive({ supplier: '' })
 const can = (suffix: string) => auth.hasPermi(`purchase:receipt:${suffix}`)
 const canReference = computed(() => auth.hasPermi('purchase:arrival:reference'))
 const canOrderQuery = computed(() => auth.hasPermi('purchase:order:query'))
@@ -261,8 +271,7 @@ const actions = computed(() => (saved.value && loaded.value ? receiptStateAction
 const dirty = computed(() => loaded.value && !readonly.value && snapshot() !== baseline.value)
 const rules: FormRules<Header> = {
   receiptDate: [{ required: true, message: '请选择入库日期', trigger: 'change' }],
-  supplierId: [{ required: true, message: '请选择供应商', trigger: 'change' }],
-  warehouseId: [{ required: true, message: '请选择收货仓库', trigger: 'change' }]
+  supplierId: [{ required: true, message: '请选择供应商', trigger: 'change' }]
 }
 let loadSequence = 0,
   prefillSequence = 0,
@@ -275,9 +284,10 @@ function cleanDecimal(text: string) {
   return text.includes('.') ? text.replace(/0+$/, '').replace(/\.$/, '') : text
 }
 function inputs(): ReceiptLineInput[] {
-  return rows.value.map(({ lineId, arrivalLineId, locationId, quantity, remark }) => ({
+  return rows.value.map(({ lineId, arrivalLineId, warehouseId, locationId, quantity, remark }) => ({
     lineId,
     arrivalLineId,
+    warehouseId,
     locationId,
     quantity: quantity.trim(),
     remark: remark.trim()
@@ -287,15 +297,12 @@ function snapshot() {
   return JSON.stringify({ header: { ...form }, lines: inputs() })
 }
 function apply(view: Receipt) {
-  locationEnabled.value = view.locationEnabled
   contextNames.supplier = `${view.supplierCode} / ${view.supplierName}`
-  contextNames.warehouse = `${view.warehouseCode} / ${view.warehouseName}`
   saved.value = view
   defaults.value = view
   Object.assign(form, {
     receiptDate: view.receiptDate,
     supplierId: view.supplierId,
-    warehouseId: view.warehouseId,
     remark: view.remark
   })
   rows.value = (view.lines ?? []).map((line) => ({
@@ -321,14 +328,11 @@ async function load() {
       defaults.value = data
       saved.value = undefined
       rows.value = []
-      locationEnabled.value = false
       contextNames.supplier = ''
-      contextNames.warehouse = ''
       const supplierId = Number(route.query.supplierId)
       Object.assign(form, {
         receiptDate: today(),
         supplierId: Number.isSafeInteger(supplierId) && supplierId > 0 ? supplierId : null,
-        warehouseId: null,
         remark: ''
       })
       baseline.value = snapshot()
@@ -378,17 +382,14 @@ function addSources(records: ArrivalLineReference[]) {
   const first = records[0]
   if (!first) return
   if (
-    records.some((record) => record.supplierId !== first.supplierId || record.warehouseId !== first.warehouseId) ||
-    (rows.value.length > 0 && (first.supplierId !== form.supplierId || first.warehouseId !== form.warehouseId))
+    records.some((record) => record.supplierId !== first.supplierId) ||
+    (form.supplierId != null && first.supplierId !== form.supplierId)
   ) {
-    ElMessage.warning('只能选择同供应商、同仓库的到货行')
+    ElMessage.warning('只能选择同供应商的到货行')
     return
   }
   form.supplierId = first.supplierId
-  form.warehouseId = first.warehouseId
-  locationEnabled.value = first.locationEnabled
   contextNames.supplier = `${first.supplierCode} / ${first.supplierName}`
-  contextNames.warehouse = `${first.warehouseCode} / ${first.warehouseName}`
   for (const source of additions)
     rows.value.push({
       ...source,
@@ -400,9 +401,18 @@ function addSources(records: ArrivalLineReference[]) {
       locationName: ''
     })
 }
+function warehouseChanged(row: LineDraft, selected: WarehouseReference[]) {
+  const warehouse = selected[0]
+  row.warehouseCode = warehouse?.warehouseCode ?? ''
+  row.warehouseName = warehouse?.warehouseName ?? ''
+  row.locationEnabled = warehouse?.locationEnabled ?? false
+  row.locationId = null
+  row.locationCode = ''
+  row.locationName = ''
+}
 async function changeContext() {
   try {
-    await ElMessageBox.confirm('更换供应商／仓库会清空当前明细，是否继续？', '更换供应商／仓库', {
+    await ElMessageBox.confirm('更换供应商会清空当前明细，是否继续？', '更换供应商', {
       type: 'warning',
       confirmButtonText: '清空并更换',
       cancelButtonText: '取消'
@@ -413,10 +423,7 @@ async function changeContext() {
   prefillSequence++
   rows.value = []
   form.supplierId = null
-  form.warehouseId = null
   contextNames.supplier = ''
-  contextNames.warehouse = ''
-  locationEnabled.value = false
   sourceFailed.value = false
 }
 function scaled(text: string): bigint {
@@ -427,26 +434,30 @@ function decimal(value: bigint): string {
   return cleanDecimal(`${value / 1000000n}.${String(value % 1000000n).padStart(6, '0')}`)
 }
 async function split(row: LineDraft) {
-  if (!locationEnabled.value || busy.value || rows.value.length >= 200) return
+  if (busy.value || rows.value.length >= 200) return
   if (!/^\d{1,9}(\.\d{1,6})?$/.test(row.quantity.trim())) {
     ElMessage.warning('请先填写有效数量')
     return
   }
   try {
-    const result = await ElMessageBox.prompt('请输入分到另一货位的数量，原行保留剩余数量', '拆分货位', {
-      inputValidator: (value: string) => {
-        if (!/^\d{1,9}(\.\d{1,6})?$/.test(value?.trim() ?? '')) return '请输入有效数量'
-        const n = scaled(value.trim())
-        return (
-          (n > 0n &&
-            n < scaled(row.quantity.trim()) &&
-            (value.split('.')[1] ?? '').replace(/0+$/, '').length <= row.quantityDecimalPlaces) ||
-          '拆分数量需小于原行数量并符合精度'
-        )
-      },
-      confirmButtonText: '拆分',
-      cancelButtonText: '取消'
-    })
+    const result = await ElMessageBox.prompt(
+      '请输入拆分数量，拆分后可分别选择仓库和货位，原行保留剩余数量',
+      '拆分入库行',
+      {
+        inputValidator: (value: string) => {
+          if (!/^\d{1,9}(\.\d{1,6})?$/.test(value?.trim() ?? '')) return '请输入有效数量'
+          const n = scaled(value.trim())
+          return (
+            (n > 0n &&
+              n < scaled(row.quantity.trim()) &&
+              (value.split('.')[1] ?? '').replace(/0+$/, '').length <= row.quantityDecimalPlaces) ||
+            '拆分数量需小于原行数量并符合精度'
+          )
+        },
+        confirmButtonText: '拆分',
+        cancelButtonText: '取消'
+      }
+    )
     const amount = scaled(result.value.trim())
     const copy = {
       ...row,
@@ -486,9 +497,10 @@ function inputError(): string | undefined {
   if (!rows.value.length) return '请至少参照一行采购到货单'
   const dimensions = new Set<string>()
   for (const [index, row] of rows.value.entries()) {
-    if (locationEnabled.value && !row.locationId) return `第 ${index + 1} 行：请选择入库货位`
-    const key = `${row.arrivalLineId}:${row.locationId ?? 0}`
-    if (dimensions.has(key)) return `第 ${index + 1} 行：同一到货行不能重复使用相同货位`
+    if (!row.warehouseId) return `第 ${index + 1} 行：请选择实际入库仓库`
+    if (row.locationEnabled && !row.locationId) return `第 ${index + 1} 行：请选择入库货位`
+    const key = `${row.arrivalLineId}:${row.warehouseId}:${row.locationId ?? 0}`
+    if (dimensions.has(key)) return `第 ${index + 1} 行：同一到货行不能重复使用相同仓库和货位`
     dimensions.add(key)
     const value = row.quantity.trim(),
       fraction = (value.split('.')[1] ?? '').replace(/0+$/, '')

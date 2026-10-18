@@ -13,7 +13,9 @@
         <el-input v-model="draft.arrivalNo" clearable maxlength="64" placeholder="请输入到货单号" />
       </el-form-item>
       <el-form-item label="供应商"><SupplierPicker v-model="draft.supplierId" style="width: 260px" /></el-form-item>
-      <el-form-item label="收货仓库"><WarehousePicker v-model="draft.warehouseId" style="width: 230px" /></el-form-item>
+      <el-form-item label="预计入库仓库">
+        <WarehousePicker v-model="draft.warehouseId" style="width: 230px" />
+      </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="draft.status" clearable placeholder="全部状态" style="width: 140px">
           <el-option v-for="(label, value) in arrivalStatusLabels" :key="value" :label="label" :value="value" />
@@ -98,7 +100,7 @@
       <vxe-column field="receiptProgress" title="入库进度" width="120">
         <template #default="{ row }">{{ progressLabel(row.receiptProgress) }}</template>
       </vxe-column>
-      <vxe-column field="warehouseName" title="收货仓库" min-width="160" />
+      <vxe-column field="warehouseName" title="预计入库仓库" min-width="160" />
       <vxe-column field="supplierDeliveryNo" title="供应商送货单号" min-width="170" />
       <vxe-column field="receiverName" title="收货经办人" width="120" />
       <vxe-column field="deptName" title="经办部门" width="150" />

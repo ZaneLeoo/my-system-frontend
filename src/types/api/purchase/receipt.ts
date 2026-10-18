@@ -40,6 +40,7 @@ export interface ArrivalLineReference extends ReceiptQuantities {
   quantityDecimalPlaces: number
 }
 export interface ReceiptLineInput {
+  warehouseId: number | null
   lineId?: number
   arrivalLineId: number
   locationId: number | null
@@ -47,6 +48,10 @@ export interface ReceiptLineInput {
   remark: string
 }
 export interface ReceiptLine extends ReceiptLineInput, ReceiptQuantities {
+  warehouseId: number
+  warehouseCode: string
+  warehouseName: string
+  locationEnabled: boolean
   lineId: number
   receiptId: number
   lineNo: number
@@ -72,7 +77,6 @@ export interface SaveReceiptRequest {
   version?: number
   receiptDate: string
   supplierId: number | null
-  warehouseId: number | null
   remark: string
   lines: ReceiptLineInput[]
 }
@@ -83,10 +87,7 @@ export interface Receipt extends ReceiptDefaults {
   supplierId: number
   supplierCode: string
   supplierName: string
-  warehouseId: number
-  warehouseCode: string
-  warehouseName: string
-  locationEnabled: boolean
+  warehouseNames: string[]
   status: ReceiptStatus
   lineCount: number
   remark: string

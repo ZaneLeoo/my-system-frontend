@@ -50,7 +50,7 @@
       <vxe-column type="checkbox" width="50" fixed="left" />
       <vxe-column field="arrivalNo" title="采购到货单号" width="230" sortable />
       <vxe-column field="supplierName" title="供应商" width="160" />
-      <vxe-column field="warehouseName" title="仓库" width="140" />
+      <vxe-column field="warehouseName" title="预计入库仓库" width="140" />
       <vxe-column field="arrivalLineNo" title="来源行号" width="90" />
       <vxe-column field="itemCode" title="料品编码" width="160" sortable />
       <vxe-column field="itemName" title="料品名称" min-width="170" sortable />
@@ -123,7 +123,7 @@ function selectable({ row }: { row: ArrivalLineReference }) {
   return (
     !props.excludedIds.includes(row.arrivalLineId) &&
     !confirming.value &&
-    (!first || (row.supplierId === first.supplierId && row.warehouseId === first.warehouseId))
+    (!first || row.supplierId === first.supplierId)
   )
 }
 async function sync() {
@@ -208,9 +208,7 @@ function checkboxAll({ checked }: VxeTableDefines.CheckboxAllEventParams<Arrival
   const first =
     selection.value.values().next().value ?? rows.value.find((row) => !props.excludedIds.includes(row.arrivalLineId))
   rows.value
-    .filter(
-      (row) => selectable({ row }) && first?.supplierId === row.supplierId && first?.warehouseId === row.warehouseId
-    )
+    .filter((row) => selectable({ row }) && first?.supplierId === row.supplierId)
     .forEach((row) => {
       if (checked) next.set(row.arrivalLineId, row)
       else next.delete(row.arrivalLineId)
@@ -247,7 +245,6 @@ async function confirm() {
           (props.supplierId != null && row.supplierId !== props.supplierId) ||
           (props.warehouseId != null && row.warehouseId !== props.warehouseId) ||
           row.supplierId !== data[0]?.supplierId ||
-          row.warehouseId !== data[0]?.warehouseId ||
           props.excludedIds.includes(row.arrivalLineId)
       )
     ) {

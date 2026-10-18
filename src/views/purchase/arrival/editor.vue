@@ -63,7 +63,7 @@
               <el-button v-if="rows.length" text @click="changeSupplier">更换</el-button>
             </div>
           </el-form-item>
-          <el-form-item label="收货仓库" prop="warehouseId">
+          <el-form-item label="预计入库仓库" prop="warehouseId">
             <el-input v-if="readonly" :model-value="`${saved?.warehouseCode} / ${saved?.warehouseName}`" />
             <WarehousePicker v-else v-model="form.warehouseId" />
           </el-form-item>
@@ -270,7 +270,7 @@ const dirty = computed(() => loaded.value && !readonly.value && snapshot() !== b
 const rules: FormRules<Header> = {
   arrivalDate: [{ required: true, message: '请选择到货日期', trigger: 'change' }],
   supplierId: [{ required: true, message: '请选择供应商', trigger: 'change' }],
-  warehouseId: [{ required: true, message: '请选择收货仓库', trigger: 'change' }]
+  warehouseId: [{ required: true, message: '请选择预计入库仓库', trigger: 'change' }]
 }
 let loadSequence = 0,
   prefillSequence = 0,
