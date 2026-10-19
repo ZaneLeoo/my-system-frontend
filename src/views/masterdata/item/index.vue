@@ -1,35 +1,13 @@
 <template>
   <div class="app-container item-page">
-    <el-form :model="query" inline class="query-form" @submit.prevent="searchItems">
-      <el-form-item label="料品编码">
-        <el-input v-model="query.itemCode" placeholder="请输入编码" clearable maxlength="64" />
-      </el-form-item>
-      <el-form-item label="料品名称">
-        <el-input v-model="query.itemName" placeholder="请输入名称" clearable maxlength="200" />
-      </el-form-item>
-      <el-form-item label="分类">
-        <el-tree-select
-          v-model="query.categoryId"
-          :data="filterCategories"
-          node-key="id"
-          check-strictly
-          filterable
-          clearable
-          placeholder="全部分类"
-          style="width: 200px"
-        />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 130px">
-          <el-option label="启用" value="0" />
-          <el-option label="停用" value="1" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" native-type="submit" :loading="loading">查询</el-button>
-        <el-button icon="Refresh" :disabled="loading" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+    <QueryPanel
+      :metadata="queryDefinition.metadata.value"
+      :applied-values="configuredValues"
+      :applied-advanced="appliedQuery.advanced"
+      :busy="loading"
+      @submit="searchConfigured"
+      @reload="reloadDefinition"
+    />
     <div class="table-toolbar">
       <span class="result-count">共 {{ total }} 个料品</span>
       <div>
@@ -61,13 +39,18 @@
         title="料品编码"
         min-width="180"
         fixed="left"
-        sortable
+        :sortable="queryDefinition.canSort('itemCode')"
         :filters="columnFilters('itemCode')"
         :filter-multiple="false"
       >
         <template #filter="params">
           <form class="column-text-filter" @submit.prevent="applyTextFilter($event, params)">
-            <el-input v-model="filterDraft.itemCode" placeholder="包含料品编码" clearable aria-label="料品编码列筛选" />
+            <el-input
+              v-model="filterDraft.itemCode"
+              :placeholder="`${columnOperator('itemCode')}料品编码`"
+              clearable
+              aria-label="料品编码列筛选"
+            />
             <div class="filter-actions">
               <el-button size="small" @click="applyTextFilter($event, params, true)">清除</el-button>
               <el-button size="small" type="primary" native-type="submit">筛选</el-button>
@@ -86,7 +69,7 @@
         title="料品名称"
         min-width="200"
         fixed="left"
-        sortable
+        :sortable="queryDefinition.canSort('itemName')"
         :filters="columnFilters('itemName')"
         :filter-multiple="false"
       >
@@ -104,7 +87,7 @@
         field="specification"
         title="规格型号"
         min-width="180"
-        sortable
+        :sortable="queryDefinition.canSort('specification')"
         :filters="columnFilters('specification')"
         :filter-multiple="false"
       >
@@ -112,7 +95,7 @@
           <form class="column-text-filter" @submit.prevent="applyTextFilter($event, params)">
             <el-input
               v-model="filterDraft.specification"
-              placeholder="包含规格型号"
+              :placeholder="`${columnOperator('specification')}规格型号`"
               clearable
               aria-label="规格型号列筛选"
             />
@@ -172,7 +155,12 @@
         <template #default="{ row }">{{ row.defaultTaxRate == null ? '未设置' : `${row.defaultTaxRate}%` }}</template>
       </vxe-column>
       <vxe-column field="remark" title="备注" min-width="220" />
-      <vxe-column field="updateTime" title="最后修改时间" width="200" sortable />
+      <vxe-column
+        field="updateTime"
+        title="最后修改时间"
+        width="200"
+        :sortable="queryDefinition.canSort('updateTime')"
+      />
       <vxe-column title="操作" width="180" fixed="right">
         <template #default="{ row }">
           <el-button v-if="canQuery" link type="primary" @click="openDrawer('detail', row)">详情</el-button>
@@ -313,15 +301,7 @@ import { computed, nextTick, onMounted, reactive, ref, shallowRef } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus/es/components/form'
 import type { VxeColumnPropTypes, VxeColumnSlotTypes, VxeTableDefines, VxeTableInstance } from 'vxe-table'
-import {
-  createItem,
-  deleteItem,
-  getItem,
-  listItems,
-  updateItem,
-  getCategoryOptions,
-  getUnitOptions
-} from '@/api/masterdata/item'
+import { createItem, deleteItem, getItem, updateItem, getCategoryOptions, getUnitOptions } from '@/api/masterdata/item'
 import ItemCategoryPicker from '@/components/masterdata/ItemCategoryPicker/index.vue'
 import UnitPicker from '@/components/masterdata/UnitPicker/index.vue'
 import { useVxe } from '@/plugins/vxe'
@@ -330,6 +310,31 @@ import { EnableStatus } from '@/types/api/common'
 import type { SaveItemRequest, Item, ItemQuery } from '@/types/api/masterdata/item'
 
 useVxe()
+const queryDefinition = useQueryDefinition('masterdata.item')
+type ItemListQuery = ItemQuery & QueryExtras
+const configuredValues = computed(() => queryDefinition.values(appliedQuery.value, filterFields))
+async function reloadDefinition() {
+  try {
+    await queryDefinition.ensure(true)
+  } catch {
+    /* 保留当前结果，不丢弃旧条件。 */
+  }
+}
+function searchConfigured(selection: QuerySelection) {
+  const known = Object.fromEntries(filterFields.map((key) => [key, selection.values[key]])) as ItemFilters
+  void loadItems({
+    ...appliedQuery.value,
+    ...known,
+    values: queryDefinition.extras(selection.values, filterFields),
+    advanced: selection.advanced,
+    pageNum: 1
+  })
+}
+
+import QueryPanel from '@/components/query/QueryPanel.vue'
+import { useQueryDefinition, buildRequest, operatorLabels } from '@/components/query/useQueryDefinition'
+import { searchBusiness } from '@/api/system/query'
+import type { QueryExtras, QuerySelection } from '@/types/api/system/query'
 
 type DrawerMode = 'create' | 'edit' | 'detail'
 type ItemFilters = Omit<ItemQuery, 'pageNum' | 'pageSize' | 'sortField' | 'sortDirection'>
@@ -364,10 +369,6 @@ function updateTaxRate(value: number | null | undefined) {
 }
 const activeTab = ref('basic')
 let initialUnitSelected = false
-const filterCategories = computed(() => selectableCategories(categoryOptions.value))
-function selectableCategories(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
-  return nodes.map((n) => ({ ...n, disabled: false, children: selectableCategories(n.children) }))
-}
 async function loadOptions() {
   optionsLoading.value = true
   try {
@@ -391,7 +392,7 @@ const tableRef = ref<VxeTableInstance<Item>>()
 const rows = shallowRef<Item[]>([])
 const total = ref(0)
 const query = reactive<ItemFilters>({})
-const appliedQuery = ref<ItemQuery>({ pageNum: 1, pageSize: 20 })
+const appliedQuery = ref<ItemListQuery>({ pageNum: 1, pageSize: 20 })
 const pagination = reactive({ pageNum: 1, pageSize: 20 })
 const filterDraft = reactive({ itemCode: '', itemName: '', specification: '' })
 function buildColumnFilters(field: keyof ItemFilters): VxeColumnPropTypes.Filters {
@@ -402,7 +403,7 @@ function buildColumnFilters(field: keyof ItemFilters): VxeColumnPropTypes.Filter
       value: v,
       checked: appliedQuery.value.purchaseEnabled === v
     }))
-  if (textFields.some((f) => f === field)) return textFilters(String(appliedQuery.value[field] ?? ''))
+  if (textFields.some((f) => f === field)) return textFilters(String(appliedQuery.value[field] ?? ''), field)
   const options =
     field === 'categoryId'
       ? flattenCategories(categoryOptions.value)
@@ -427,8 +428,8 @@ const filtersByField = computed(
       VxeColumnPropTypes.Filters
     >
 )
-function columnFilters(field: keyof ItemFilters): VxeColumnPropTypes.Filters {
-  return filtersByField.value[field]
+function columnFilters(field: keyof ItemFilters): VxeColumnPropTypes.Filters | undefined {
+  return queryDefinition.canColumnFilter(field) ? filtersByField.value[field] : undefined
 }
 const loading = ref(false)
 const deletingId = ref<number>()
@@ -493,12 +494,19 @@ function toForm(item: Item): SaveItemRequest {
 }
 
 /** 仅提交最新结果；失败时恢复已生效的分页、排序和筛选指示。 */
-async function loadItems(filters: ItemQuery = appliedQuery.value): Promise<void> {
+async function loadItems(filters: ItemListQuery = appliedQuery.value): Promise<void> {
   const sequence = ++listSequence
   const requested = { ...filters }
   loading.value = true
   try {
-    const { data } = await listItems(requested)
+    const metadata = await queryDefinition.ensure()
+    const request = buildRequest(
+      metadata,
+      requested,
+      queryDefinition.values(requested, filterFields),
+      requested.advanced
+    )
+    const { data } = await searchBusiness<Item>('/masterdata/item/search', request)
     if (sequence !== listSequence) return
     const lastPage = Math.max(1, Math.ceil(data.total / requested.pageSize))
     if (requested.pageNum > lastPage && data.total > 0) {
@@ -535,17 +543,6 @@ async function syncSort(sequence: number) {
 function filtersOf(source: ItemFilters): ItemFilters {
   return Object.fromEntries(filterFields.map((f) => [f, source[f]])) as ItemFilters
 }
-function searchItems() {
-  void loadItems({
-    ...appliedQuery.value,
-    itemCode: query.itemCode?.trim() || undefined,
-    itemName: query.itemName?.trim() || undefined,
-    categoryId: query.categoryId || undefined,
-    status: query.status || undefined,
-    pageNum: 1
-  })
-}
-
 function changePage(pageNum: number, pageSize: number) {
   void loadItems({ ...appliedQuery.value, pageNum: pageSize !== appliedQuery.value.pageSize ? 1 : pageNum, pageSize })
 }
@@ -560,14 +557,25 @@ function handleSort({ field, order }: VxeTableDefines.SortChangeEventParams<Item
   })
 }
 
-function textFilters(value?: string): VxeColumnPropTypes.Filters<string> {
-  return [{ label: '包含', value: 'contains', data: value ?? '', checked: Boolean(value) }]
+function columnOperator(field: string) {
+  return (
+    operatorLabels[
+      queryDefinition.metadata.value?.fields.find((f) => f.fieldKey === field)?.defaultOperator || 'like'
+    ] || '包含'
+  )
+}
+function textFilters(value?: string, field = 'itemCode'): VxeColumnPropTypes.Filters<string> {
+  return [{ label: columnOperator(field), value: 'contains', data: value ?? '', checked: Boolean(value) }]
 }
 
 async function applyTextFilter(event: Event, params: VxeColumnSlotTypes.FilterSlotParams<Item>, clear = false) {
   const field = params.column.field
   if (field !== 'itemCode' && field !== 'itemName' && field !== 'specification') return
-  await tableRef.value?.setFilterByEvent(event, params.column, textFilters(clear ? '' : filterDraft[field].trim()))
+  await tableRef.value?.setFilterByEvent(
+    event,
+    params.column,
+    textFilters(clear ? '' : filterDraft[field].trim(), field)
+  )
   await tableRef.value?.closeFilter()
 }
 
@@ -601,12 +609,6 @@ function handleColumnFilter({ filterList }: VxeTableDefines.FilterChangeEventPar
   }
   Object.assign(query, filters)
   void loadItems({ ...appliedQuery.value, ...filters, pageNum: 1 })
-}
-
-async function resetQuery() {
-  Object.assign(query, filtersOf({}))
-  await tableRef.value?.closeFilter()
-  await loadItems({ pageNum: 1, pageSize: appliedQuery.value.pageSize })
 }
 
 /** 编辑前读取最新详情与版本，忽略关闭或切换抽屉后的迟到响应。 */
