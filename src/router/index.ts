@@ -95,6 +95,20 @@ export const constantRoutes = [
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [
   {
+    path: '/query-definition',
+    component: Layout,
+    hidden: true,
+    permissions: ['query:definition:list'],
+    children: [
+      {
+        path: ':id(\\d+)',
+        component: () => import('@/views/system/query/definition/editor.vue'),
+        name: 'QueryDefinitionEditor',
+        meta: { title: '查询配置编辑', activeMenu: '/tool/query/definition', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/purchase/arrival-document',
     component: Layout,
     hidden: true,
