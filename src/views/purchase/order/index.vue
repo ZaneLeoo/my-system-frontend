@@ -1,29 +1,13 @@
 <template>
   <div class="app-container">
-    <el-form inline :model="draft" @submit.prevent="search">
-      <el-form-item label="订单号">
-        <el-input v-model="draft.orderNo" clearable maxlength="64" placeholder="请输入订单号" />
-      </el-form-item>
-      <el-form-item label="供应商"><SupplierPicker v-model="draft.supplierId" style="width: 260px" /></el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="draft.status" clearable placeholder="全部状态" style="width: 140px">
-          <el-option v-for="(label, value) in orderStatusLabels" :key="value" :label="label" :value="value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="订单日期">
-        <el-date-picker
-          v-model="dates"
-          type="daterange"
-          value-format="YYYY-MM-DD"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" native-type="submit" :loading="loading">查询</el-button>
-        <el-button :disabled="loading" @click="reset">重置</el-button>
-      </el-form-item>
-    </el-form>
+    <QueryPanel
+      :metadata="queryDefinition.metadata.value"
+      :applied-values="configuredValues"
+      :applied-advanced="applied.advanced"
+      :busy="loading"
+      @submit="searchConfigured"
+      @reload="reloadDefinition"
+    />
     <div class="toolbar">
       <span>共 {{ total }} 张订单</span>
       <div>
@@ -55,14 +39,21 @@
       @filter-change="filter"
       @filter-visible="filterVisible"
     >
-      <vxe-column field="orderNo" title="订单号" width="250" sortable :filters="numberFilters" :filter-multiple="false">
+      <vxe-column
+        field="orderNo"
+        title="订单号"
+        width="250"
+        :sortable="queryDefinition.canSort('orderNo')"
+        :filters="queryDefinition.canColumnFilter('orderNo') ? numberFilters : undefined"
+        :filter-multiple="false"
+      >
         <template #default="{ row }">
           <el-button v-if="can('query')" link type="primary" @click="open(row)">{{ row.orderNo }}</el-button>
           <span v-else>{{ row.orderNo }}</span>
         </template>
         <template #filter="params">
           <form class="number-filter" @submit.prevent="applyNumber($event, params)">
-            <el-input v-model="numberDraft" placeholder="包含订单号" maxlength="64" clearable />
+            <el-input v-model="numberDraft" :placeholder="`${columnOperator()}订单号`" maxlength="64" clearable />
             <div>
               <el-button size="small" @click="applyNumber($event, params, true)">清除</el-button>
               <el-button size="small" type="primary" native-type="submit">筛选</el-button>
@@ -70,9 +61,15 @@
           </form>
         </template>
       </vxe-column>
-      <vxe-column field="orderDate" title="订单日期" width="140" sortable />
+      <vxe-column field="orderDate" title="订单日期" width="140" :sortable="queryDefinition.canSort('orderDate')" />
       <vxe-column field="supplierName" title="供应商" min-width="220" />
-      <vxe-column field="status" title="状态" width="120" :filters="statusFilters" :filter-multiple="false">
+      <vxe-column
+        field="status"
+        title="状态"
+        width="120"
+        :filters="queryDefinition.canColumnFilter('status') ? statusFilters : undefined"
+        :filter-multiple="false"
+      >
         <template #default="{ row }">
           <el-tag :type="row.status === 'DRAFT' ? 'info' : row.status === 'APPROVED' ? 'success' : 'primary'">
             {{ statusLabel(row.status) }}
@@ -90,8 +87,19 @@
       <vxe-column field="lineCount" title="明细行数" width="100" align="right" />
       <vxe-column field="netAmount" title="未税金额" width="160" align="right" />
       <vxe-column field="tax" title="税额" width="150" align="right" />
-      <vxe-column field="grossAmount" title="价税合计" width="170" align="right" sortable />
-      <vxe-column field="updateTime" title="最后修改时间" width="200" sortable />
+      <vxe-column
+        field="grossAmount"
+        title="价税合计"
+        width="170"
+        align="right"
+        :sortable="queryDefinition.canSort('grossAmount')"
+      />
+      <vxe-column
+        field="updateTime"
+        title="最后修改时间"
+        width="200"
+        :sortable="queryDefinition.canSort('updateTime')"
+      />
       <vxe-column title="操作" width="190" fixed="right">
         <template #default="{ row }">
           <el-button v-if="can('query')" link type="primary" @click="open(row)">详情</el-button>
@@ -134,14 +142,43 @@ import { computed, nextTick, onActivated, onMounted, reactive, ref, shallowRef }
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { VxeTableInstance, VxeTableDefines, VxeColumnPropTypes, VxeColumnSlotTypes } from 'vxe-table'
-import SupplierPicker from '@/components/masterdata/SupplierPicker/index.vue'
-import { listOrders, deleteOrder } from '@/api/purchase/order'
+import { deleteOrder } from '@/api/purchase/order'
 import { orderStatusLabels, arrivalProgressLabels, receiptProgressLabels } from '@/types/api/purchase/order'
 import type { Order, OrderQuery, OrderSortField, OrderStatus, ArrivalProgress } from '@/types/api/purchase/order'
 import { useVxe } from '@/plugins/vxe'
 import type { ReceiptProgress } from '@/types/api/purchase/arrival'
 import auth from '@/plugins/auth'
 useVxe()
+import QueryPanel from '@/components/query/QueryPanel.vue'
+import { useQueryDefinition, buildRequest, operatorLabels } from '@/components/query/useQueryDefinition'
+import { searchBusiness } from '@/api/system/query'
+import type { QueryExtras, QuerySelection } from '@/types/api/system/query'
+type OrderListQuery = OrderQuery & QueryExtras
+const queryDefinition = useQueryDefinition('purchase.order')
+const orderBaseKeys = ['orderNo', 'supplierId', 'status'] as const
+const configuredValues = computed(() => queryDefinition.values(applied.value, orderBaseKeys))
+async function reloadDefinition() {
+  try {
+    await queryDefinition.ensure(true)
+  } catch {
+    /* 保留成功结果。 */
+  }
+}
+function searchConfigured(selection: QuerySelection) {
+  const known = Object.fromEntries(orderBaseKeys.map((key) => [key, selection.values[key]])) as Pick<
+    OrderQuery,
+    'orderNo' | 'supplierId' | 'status'
+  >
+  void load({
+    ...applied.value,
+    ...known,
+    values: queryDefinition.extras(selection.values, orderBaseKeys),
+    advanced: selection.advanced,
+    beginDate: undefined,
+    endDate: undefined,
+    pageNum: 1
+  })
+}
 const router = useRouter(),
   table = ref<VxeTableInstance<Order>>()
 const rows = shallowRef<Order[]>([]),
@@ -155,7 +192,7 @@ const draft = reactive<{ orderNo: string; supplierId: number | null; status: Ord
 })
 const dates = ref<[string, string] | null>(null),
   page = reactive({ pageNum: 1, pageSize: 20 })
-const applied = ref<OrderQuery>({ pageNum: 1, pageSize: 20 }),
+const applied = ref<OrderListQuery>({ pageNum: 1, pageSize: 20 }),
   numberDraft = ref('')
 let sequence = 0,
   activated = false
@@ -169,8 +206,20 @@ function receiptProgressLabel(progress: ReceiptProgress) {
 function progressLabel(progress: ArrivalProgress) {
   return arrivalProgressLabels[progress]
 }
+function columnOperator() {
+  return (
+    operatorLabels[
+      queryDefinition.metadata.value?.fields.find((f) => f.fieldKey === 'orderNo')?.defaultOperator || 'like'
+    ] || '包含'
+  )
+}
 const numberFilters = computed<VxeColumnPropTypes.Filters>(() => [
-  { label: '包含', value: 'contains', data: applied.value.orderNo ?? '', checked: Boolean(applied.value.orderNo) }
+  {
+    label: columnOperator(),
+    value: 'contains',
+    data: applied.value.orderNo ?? '',
+    checked: Boolean(applied.value.orderNo)
+  }
 ])
 const statusFilters = computed<VxeColumnPropTypes.Filters>(() =>
   Object.entries(orderStatusLabels).map(([value, label]) => ({ label, value, checked: applied.value.status === value }))
@@ -191,12 +240,19 @@ async function syncSort(current: number) {
   if (applied.value.sortField) await table.value?.sort(applied.value.sortField, applied.value.sortDirection)
   else await table.value?.clearSort()
 }
-async function load(query: OrderQuery = applied.value) {
+async function load(query: OrderListQuery = applied.value) {
   const current = ++sequence,
     requested = { ...query }
   loading.value = true
   try {
-    const { data } = await listOrders(requested)
+    const metadata = await queryDefinition.ensure()
+    const request = buildRequest(
+      metadata,
+      requested,
+      queryDefinition.values(requested, orderBaseKeys),
+      requested.advanced
+    )
+    const { data } = await searchBusiness<Order>('/purchase/order/search', request)
     if (current !== sequence) return
     const last = Math.max(1, Math.ceil(data.total / requested.pageSize))
     if (requested.pageNum > last && data.total > 0) {
@@ -219,25 +275,6 @@ async function load(query: OrderQuery = applied.value) {
     if (current === sequence) loading.value = false
   }
 }
-function search() {
-  void load({
-    ...applied.value,
-    pageNum: 1,
-    orderNo: draft.orderNo.trim() || undefined,
-    supplierId: draft.supplierId ?? undefined,
-    status: draft.status,
-    beginDate: dates.value?.[0],
-    endDate: dates.value?.[1]
-  })
-}
-async function reset() {
-  draft.orderNo = ''
-  draft.supplierId = null
-  draft.status = undefined
-  dates.value = null
-  await table.value?.closeFilter()
-  await load({ pageNum: 1, pageSize: applied.value.pageSize })
-}
 function changePage(pageNum: number, pageSize: number) {
   void load({ ...applied.value, pageNum: pageSize === applied.value.pageSize ? pageNum : 1, pageSize })
 }
@@ -257,12 +294,12 @@ function filterVisible({ field, visible }: VxeTableDefines.FilterVisibleEventPar
 async function applyNumber(event: Event, params: VxeColumnSlotTypes.FilterSlotParams<Order>, clear = false) {
   const text = clear ? '' : numberDraft.value.trim()
   await table.value?.setFilterByEvent(event, params.column, [
-    { label: '包含', value: 'contains', data: text, checked: Boolean(text) }
+    { label: columnOperator(), value: 'contains', data: text, checked: Boolean(text) }
   ])
   await table.value?.closeFilter()
 }
 function filter({ filterList }: VxeTableDefines.FilterChangeEventParams<Order>) {
-  const query: OrderQuery = { ...applied.value, pageNum: 1, orderNo: undefined, status: undefined }
+  const query: OrderListQuery = { ...applied.value, pageNum: 1, orderNo: undefined, status: undefined }
   for (const item of filterList) {
     if (item.field === 'orderNo') {
       const data: unknown = item.datas[0]
