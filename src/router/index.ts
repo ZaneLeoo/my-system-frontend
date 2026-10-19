@@ -104,7 +104,7 @@ export const dynamicRoutes = [
         path: ':id(\\d+)',
         component: () => import('@/views/system/query/definition/editor.vue'),
         name: 'QueryDefinitionEditor',
-        meta: { title: '查询配置编辑', activeMenu: '/tool/query/definition', noCache: true }
+        meta: { title: '查询配置编辑', activeMenu: '/tool/query', noCache: true }
       }
     ]
   },

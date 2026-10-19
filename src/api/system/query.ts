@@ -2,6 +2,7 @@ import request from '@/utils/request'
 import type { ApiResponse, PageResult } from '@/types/api/common'
 import type {
   MetadataTable,
+  QueryDefinitionLink,
   MetadataColumn,
   QueryMetadata,
   QueryOption,
@@ -35,6 +36,9 @@ export function searchBusiness<T>(path: string, data: SearchRequest): Promise<Ap
 }
 export function getMetadataTables(): Promise<ApiResponse<MetadataTable[]>> {
   return request({ url: `${base}/metadata/tables` })
+}
+export function getMetadataDefinitionLinks(): Promise<ApiResponse<QueryDefinitionLink[]>> {
+  return request({ url: `${base}/metadata/definition-links` })
 }
 export function getMetadataCandidates(): Promise<ApiResponse<{ tableName: string; tableComment: string }[]>> {
   return request({ url: `${base}/metadata/candidates` })

@@ -14,8 +14,28 @@
         <template #default="{ row }">{{ row.available ? '可用' : '失效' }}</template>
       </vxe-column>
       <vxe-column field="synchronizedTime" title="同步时间" width="200" />
-      <vxe-column title="操作" width="260">
+      <vxe-column title="操作" width="340">
         <template #default="{ row }">
+          <template v-if="checkPermi(['query:definition:list'])">
+            <el-button
+              v-if="linksFor(row).length === 1"
+              link
+              type="primary"
+              @click.stop="openDefinition(linksFor(row)[0])"
+            >
+              配置查询
+            </el-button>
+            <el-dropdown v-else-if="linksFor(row).length > 1" trigger="click" @command="openDefinition">
+              <el-button link type="primary" @click.stop>配置查询</el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item v-for="link in linksFor(row)" :key="link.definitionId" :command="link">
+                    {{ link.displayName }}（{{ link.sourceLabel }}）
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
           <el-button link type="primary" @click.stop="showColumns(row)">字段</el-button>
           <el-button v-hasPermi="['query:metadata:edit']" link @click.stop="rename(row)">修改名称</el-button>
           <el-button v-hasPermi="['query:metadata:sync']" link type="primary" @click.stop="showSync(row)">
@@ -30,7 +50,9 @@
         <vxe-column field="displayName" title="显示名称" min-width="180" />
         <vxe-column field="columnName" title="字段名" min-width="170" />
         <vxe-column field="columnType" title="数据库类型" width="160" />
-        <vxe-column field="dataType" title="查询类型" width="130" />
+        <vxe-column title="查询类型" width="130">
+          <template #default="{ row }">{{ dataTypeLabels[row.dataType] || row.dataType }}</template>
+        </vxe-column>
         <vxe-column title="状态" width="100">
           <template #default="{ row }">{{ row.available ? '可用' : '失效' }}</template>
         </vxe-column>
@@ -82,12 +104,25 @@
 import { useVxe } from '@/plugins/vxe'
 useVxe()
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as api from '@/api/system/query'
-import type { MetadataTable, MetadataColumn, SyncPreview } from '@/types/api/system/query'
+import { checkPermi } from '@/utils/permission'
+import type { MetadataTable, MetadataColumn, QueryDefinitionLink, SyncPreview } from '@/types/api/system/query'
+const router = useRouter()
+const dataTypeLabels: Record<string, string> = {
+  STRING: '文本',
+  INTEGER: '整数',
+  DECIMAL: '小数',
+  BOOLEAN: '是／否',
+  DATE: '日期',
+  DATETIME: '日期时间',
+  UNSUPPORTED: '暂不支持'
+}
 const tables = ref<MetadataTable[]>([]),
   columns = ref<MetadataColumn[]>([]),
-  selected = ref<MetadataTable>()
+  selected = ref<MetadataTable>(),
+  definitionLinks = ref<QueryDefinitionLink[]>([])
 const loading = ref(false),
   saving = ref(false),
   importOpen = ref(false),
@@ -105,6 +140,14 @@ async function load() {
     const { data } = await api.getMetadataTables()
     if (current !== sequence) return
     tables.value = data
+    if (checkPermi(['query:definition:list'])) {
+      try {
+        const links = (await api.getMetadataDefinitionLinks()).data
+        if (current === sequence) definitionLinks.value = links
+      } catch {
+        /* 保留上次查询配置入口。 */
+      }
+    }
     if (selected.value) {
       selected.value = data.find((t) => t.tableId === selected.value?.tableId)
       if (selected.value) await showColumns(selected.value)
@@ -114,6 +157,12 @@ async function load() {
   } finally {
     if (current === sequence) loading.value = false
   }
+}
+function linksFor(table: MetadataTable): QueryDefinitionLink[] {
+  return definitionLinks.value.filter((link) => link.tableId === table.tableId)
+}
+function openDefinition(link: QueryDefinitionLink) {
+  void router.push(`/query-definition/${link.definitionId}`)
 }
 async function showColumns(table: MetadataTable) {
   const current = ++columnsSequence

@@ -21,6 +21,7 @@
           >
             校验并发布
           </el-button>
+          <el-button @click="showHistory">发布记录</el-button>
         </div>
       </div>
       <el-alert v-if="dirty" title="存在未保存修改；保存后可预览和发布。" type="info" :closable="false" />
@@ -50,7 +51,9 @@
                 {{ sourceLabel(row) }} / {{ columnOf(row)?.displayName || '字段已失效' }}
               </template>
             </el-table-column>
-            <el-table-column prop="component" label="控件" width="120" />
+            <el-table-column label="控件" width="120">
+              <template #default="{ row }">{{ controlLabels[row.component] || row.component }}</template>
+            </el-table-column>
             <el-table-column label="状态" width="100">
               <template #default="{ row }">
                 <el-tag :type="row.enabled ? 'success' : 'info'">{{ row.enabled ? '开放' : '停用' }}</el-tag>
@@ -69,25 +72,51 @@
           </el-table>
         </el-tab-pane>
         <el-tab-pane label="常用查询布局" name="layout">
-          <el-alert title="常用查询显示在列表顶部。明细条件通过高级查询的关联组添加。" :closable="false" />
-          <el-table :data="detail.fields.filter((f) => f.sourceKey === 'main' && f.enabled)" border class="field-table">
-            <el-table-column prop="label" label="字段" />
-            <el-table-column label="常用区显示">
-              <template #default="{ row }"><el-switch v-model="row.commonVisible" /></template>
-            </el-table-column>
-            <el-table-column label="显示顺序">
-              <template #default="{ row }">
-                <el-input-number v-model="row.displayOrder" :min="0" :max="999" controls-position="right" />
-              </template>
-            </el-table-column>
-            <el-table-column prop="defaultOperator" label="默认方式">
-              <template #default="{ row }">{{ operatorLabels[row.defaultOperator] }}</template>
-            </el-table-column>
-          </el-table>
+          <el-alert
+            title="拖动左侧手柄调整顺序；开启“常用区显示”后，字段会按此顺序出现在列表顶部。"
+            :closable="false"
+          />
+          <draggable v-model="layoutFields" item-key="fieldKey" handle=".drag-handle" class="layout-list">
+            <template #item="{ element }">
+              <div class="layout-row">
+                <span class="drag-handle" title="拖拽排序" aria-label="拖拽排序">⠿</span>
+                <span class="layout-name">{{ element.label }}</span>
+                <span>
+                  常用区显示
+                  <el-switch v-model="element.commonVisible" />
+                </span>
+                <span class="layout-operator">默认方式：{{ operatorLabels[element.defaultOperator] }}</span>
+              </div>
+            </template>
+          </draggable>
+          <el-empty v-if="!layoutFields.length" description="请先开放主表查询字段" />
         </el-tab-pane>
         <el-tab-pane label="查询预览" name="preview">
           <el-alert title="预览需要同时拥有该业务列表权限；预览不会改变已发布配置。" :closable="false" />
-          <template v-if="previewMetadata">
+          <el-alert
+            v-if="!checkPermi(['query:definition:preview'])"
+            title="当前账号没有查询预览权限。"
+            type="warning"
+            :closable="false"
+            class="preview-message"
+          />
+          <el-alert
+            v-if="dirty"
+            title="请先保存草稿，再预览当前配置。"
+            type="warning"
+            :closable="false"
+            class="preview-message"
+          />
+          <el-alert v-if="previewError" :title="previewError" type="error" :closable="false" class="preview-message">
+            <el-button text @click="preview()">重试预览</el-button>
+          </el-alert>
+          <div
+            v-if="previewLoading && !previewMetadata"
+            class="preview-message"
+            v-loading="true"
+            style="height: 90px"
+          />
+          <template v-if="previewMetadata && !dirty">
             <QueryPanel
               :metadata="previewMetadata"
               :preview-definition-id="id"
@@ -98,7 +127,7 @@
               @reload="preview()"
             />
             <el-text>共 {{ previewTotal }} 条，预览前 20 条</el-text>
-            <el-table :data="previewRows" border class="field-table">
+            <el-table v-if="previewRows.length" :data="previewRows" border class="field-table">
               <el-table-column
                 v-for="field in previewColumns"
                 :key="field.fieldKey"
@@ -108,8 +137,11 @@
                 show-overflow-tooltip
               />
             </el-table>
+            <el-empty v-else description="查询配置已加载，当前条件下没有数据" />
           </template>
-          <el-empty v-else description="保存草稿后，点击预览已保存草稿" />
+          <el-empty v-else-if="!previewLoading && !previewError && !dirty" description="尚无预览结果">
+            <el-button @click="preview()">加载预览</el-button>
+          </el-empty>
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -184,6 +216,21 @@
         <el-button type="primary" @click="confirmField">加入草稿</el-button>
       </template>
     </el-drawer>
+    <el-dialog v-model="historyOpen" title="已发布版本" width="900px">
+      <el-table :data="releases">
+        <el-table-column prop="revision" label="版本" width="90" />
+        <el-table-column prop="createBy" label="发布人" width="120" />
+        <el-table-column prop="createTime" label="发布时间" width="200" />
+        <el-table-column label="配置">
+          <template #default="{ row }">
+            <el-button link @click="snapshot = JSON.stringify(JSON.parse(row.configSnapshot), null, 2)">
+              查看快照
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pre v-if="snapshot" class="snapshot">{{ snapshot }}</pre>
+    </el-dialog>
   </div>
 </template>
 <script setup lang="ts" name="QueryDefinitionEditor">
@@ -192,8 +239,16 @@ import { onBeforeRouteLeave, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as api from '@/api/system/query'
 import QueryPanel from '@/components/query/QueryPanel.vue'
+import draggable from 'vuedraggable'
+import { checkPermi } from '@/utils/permission'
 import { buildRequest, clone, operatorLabels } from '@/components/query/useQueryDefinition'
-import type { DefinitionDetail, DraftField, QueryMetadata, QuerySelection } from '@/types/api/system/query'
+import type {
+  DefinitionDetail,
+  DraftField,
+  QueryMetadata,
+  QueryRelease,
+  QuerySelection
+} from '@/types/api/system/query'
 const route = useRoute(),
   id = Number(route.params.id),
   detail = ref<DefinitionDetail>(),
@@ -202,6 +257,23 @@ const route = useRoute(),
   tab = ref('fields'),
   saved = ref('')
 const dirty = computed(() => Boolean(detail.value) && JSON.stringify(detail.value) !== saved.value)
+const layoutFields = computed({
+  get: () =>
+    detail.value?.fields
+      .filter((field) => field.sourceKey === 'main' && field.enabled)
+      .sort((a, b) => a.displayOrder - b.displayOrder || a.fieldKey.localeCompare(b.fieldKey)) || [],
+  set: (ordered: DraftField[]) => ordered.forEach((field, index) => (field.displayOrder = index + 1))
+})
+watch(tab, (value) => {
+  if (
+    value === 'preview' &&
+    !previewMetadata.value &&
+    !previewLoading.value &&
+    !dirty.value &&
+    checkPermi(['query:definition:preview'])
+  )
+    void preview()
+})
 async function load() {
   loading.value = true
   try {
@@ -223,6 +295,7 @@ async function save() {
     await load()
     ElMessage.success('草稿已保存，尚未发布')
     previewMetadata.value = undefined
+    if (tab.value === 'preview') await preview()
   } catch {
     /* 保留草稿。 */
   } finally {
@@ -247,12 +320,15 @@ const previewMetadata = ref<QueryMetadata>(),
   previewRows = ref<Record<string, unknown>[]>([]),
   previewTotal = ref(0),
   previewLoading = ref(false),
+  previewError = ref(''),
   previewSelection = ref<QuerySelection>({ values: {} })
 let previewSequence = 0
 async function preview(selection: QuerySelection = { values: {} }) {
-  if (dirty.value) return
+  if (dirty.value || !checkPermi(['query:definition:preview'])) return
   const current = ++previewSequence
   previewLoading.value = true
+  previewError.value = ''
+  tab.value = 'preview'
   try {
     const request = previewMetadata.value
       ? buildRequest(previewMetadata.value, { pageNum: 1, pageSize: 20 }, selection.values, selection.advanced)
@@ -265,17 +341,35 @@ async function preview(selection: QuerySelection = { values: {} }) {
     previewSelection.value = selection
     tab.value = 'preview'
   } catch {
-    /* 保留最后成功预览。 */
+    if (current === previewSequence) previewError.value = '预览失败，请检查业务列表权限或草稿配置后重试。'
   } finally {
     if (current === previewSequence) previewLoading.value = false
   }
 }
-const previewColumns = computed(
-  () =>
+const previewColumns = computed(() => {
+  const row = previewRows.value[0]
+  if (!row) return []
+  const labels = new Map(previewMetadata.value?.fields.map((field) => [field.fieldKey, field.label]) || [])
+  const configured =
     previewMetadata.value?.fields
-      .filter((f) => f.sourceKey === 'main' && previewRows.value.some((row) => f.fieldKey in row))
-      .slice(0, 8) || []
-)
+      .filter((field) => field.sourceKey === 'main' && field.fieldKey in row)
+      .map((field) => field.fieldKey) || []
+  return [...new Set([...configured, ...Object.keys(row)])]
+    .slice(0, 10)
+    .map((fieldKey) => ({ fieldKey, label: labels.get(fieldKey) || fieldKey }))
+})
+const historyOpen = ref(false),
+  releases = ref<QueryRelease[]>([]),
+  snapshot = ref('')
+async function showHistory() {
+  try {
+    releases.value = (await api.getQueryReleases(id)).data
+    snapshot.value = ''
+    historyOpen.value = true
+  } catch {
+    /* 请求层提示。 */
+  }
+}
 const fieldOpen = ref(false),
   fieldDraft = ref<DraftField>(emptyField()),
   selectedOperators = ref<string[]>([])
@@ -449,6 +543,40 @@ onMounted(() => void load())
 }
 .field-table {
   margin-top: 16px;
+}
+.layout-list {
+  margin-top: 16px;
+  border: 1px solid var(--el-border-color);
+}
+.layout-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 54px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+.layout-name {
+  flex: 1;
+}
+.layout-operator {
+  min-width: 130px;
+}
+.drag-handle {
+  cursor: grab;
+  color: var(--el-text-color-secondary);
+  font-size: 22px;
+  user-select: none;
+}
+.preview-message {
+  margin-top: 12px;
+}
+.snapshot {
+  max-height: 450px;
+  overflow: auto;
+  white-space: pre-wrap;
+  background: var(--el-fill-color-light);
+  padding: 16px;
 }
 .editor :deep(.el-tabs__content) {
   overflow: visible;

@@ -64,6 +64,12 @@ export interface MetadataTable {
   version: number
   synchronizedTime: string
 }
+export interface QueryDefinitionLink {
+  tableId: number
+  definitionId: number
+  displayName: string
+  sourceLabel: string
+}
 export interface MetadataColumn {
   columnId: number
   tableId: number
