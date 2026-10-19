@@ -1,3 +1,5 @@
+import type { PageQuery } from '@/types/api/common'
+
 export type QueryScalar = string | number | boolean
 export type QueryValue = QueryScalar | QueryScalar[]
 export interface QueryNode {
@@ -63,6 +65,18 @@ export interface MetadataTable {
   available: boolean
   version: number
   synchronizedTime: string
+}
+export interface MetadataTableQuery extends PageQuery {
+  keyword?: string
+}
+export interface MetadataTableRow extends MetadataTable {
+  queryRegistered: boolean
+}
+export interface MetadataCandidate {
+  tableName: string
+  tableComment: string
+  displayName: string
+  imported: boolean
 }
 export interface QueryDefinitionLink {
   tableId: number

@@ -2,6 +2,9 @@ import request from '@/utils/request'
 import type { ApiResponse, PageResult } from '@/types/api/common'
 import type {
   MetadataTable,
+  MetadataTableQuery,
+  MetadataTableRow,
+  MetadataCandidate,
   QueryDefinitionLink,
   MetadataColumn,
   QueryMetadata,
@@ -34,13 +37,13 @@ export function getQueryOptions(
 export function searchBusiness<T>(path: string, data: SearchRequest): Promise<ApiResponse<PageResult<T>>> {
   return request({ url: path, method: 'post', data, timeout: 15000, headers: { repeatSubmit: false } })
 }
-export function getMetadataTables(): Promise<ApiResponse<MetadataTable[]>> {
-  return request({ url: `${base}/metadata/tables` })
+export function getMetadataTables(params: MetadataTableQuery): Promise<ApiResponse<PageResult<MetadataTableRow>>> {
+  return request({ url: `${base}/metadata/tables`, params })
 }
-export function getMetadataDefinitionLinks(): Promise<ApiResponse<QueryDefinitionLink[]>> {
-  return request({ url: `${base}/metadata/definition-links` })
+export function getMetadataDefinitionLinks(tableIds: number[]): Promise<ApiResponse<QueryDefinitionLink[]>> {
+  return request({ url: `${base}/metadata/definition-links`, params: { tableIds: tableIds.join(',') } })
 }
-export function getMetadataCandidates(): Promise<ApiResponse<{ tableName: string; tableComment: string }[]>> {
+export function getMetadataCandidates(): Promise<ApiResponse<MetadataCandidate[]>> {
   return request({ url: `${base}/metadata/candidates` })
 }
 export function importMetadataTable(tableName: string): Promise<ApiResponse<MetadataTable>> {

@@ -42,8 +42,14 @@
           />
         </el-tab-pane>
         <el-tab-pane label="可查询字段" name="fields">
-          <el-button v-hasPermi="['query:definition:edit']" type="primary" @click="addField">添加字段</el-button>
-          <el-table :data="detail.fields" border class="field-table" row-key="fieldKey">
+          <div class="field-toolbar">
+            <div class="field-search-group">
+              <el-input v-model="fieldSearch" clearable placeholder="按显示名称或字段标识查询" style="width: 320px" />
+              <el-text>显示 {{ filteredFields.length }} / {{ detail.fields.length }} 个字段</el-text>
+            </div>
+            <el-button v-hasPermi="['query:definition:edit']" type="primary" @click="addField">添加字段</el-button>
+          </div>
+          <el-table :data="pagedFields" border class="field-table" row-key="fieldKey">
             <el-table-column prop="label" label="显示名称" min-width="150" />
             <el-table-column prop="fieldKey" label="字段标识" min-width="160" />
             <el-table-column label="来源" min-width="170">
@@ -70,29 +76,63 @@
               </template>
             </el-table-column>
           </el-table>
+          <el-pagination
+            v-model:current-page="fieldPage"
+            v-model:page-size="fieldPageSize"
+            class="query-pagination"
+            background
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="filteredFields.length"
+            :page-sizes="[10, 20, 50, 100]"
+          />
         </el-tab-pane>
         <el-tab-pane label="常用查询布局" name="layout">
           <el-alert
             title="拖动左侧手柄调整顺序；开启“常用区显示”后，字段会按此顺序出现在列表顶部。"
             :closable="false"
           />
-          <draggable v-model="layoutFields" item-key="fieldKey" handle=".drag-handle" class="layout-list">
-            <template #item="{ element }">
-              <div class="layout-row">
-                <span class="drag-handle" title="拖拽排序" aria-label="拖拽排序">⠿</span>
-                <span class="layout-name">{{ element.label }}</span>
-                <span>
-                  常用区显示
-                  <el-switch v-model="element.commonVisible" />
-                </span>
-                <span class="layout-operator">默认方式：{{ operatorLabels[element.defaultOperator] }}</span>
-              </div>
-            </template>
-          </draggable>
+          <div class="layout-list">
+            <table class="layout-table" aria-label="常用查询布局">
+              <colgroup>
+                <col style="width: 60px" />
+                <col style="width: 64px" />
+                <col />
+                <col style="width: 150px" />
+                <col style="width: 220px" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col" class="layout-center">拖拽</th>
+                  <th scope="col" class="layout-center">序号</th>
+                  <th scope="col">字段名称</th>
+                  <th scope="col" class="layout-center">常用区显示</th>
+                  <th scope="col">默认方式</th>
+                </tr>
+              </thead>
+              <draggable v-model="layoutFields" tag="tbody" item-key="fieldKey" handle=".drag-handle">
+                <template #item="{ element, index }">
+                  <tr>
+                    <td class="layout-center">
+                      <span class="drag-handle" title="拖拽排序" :aria-label="`拖动${element.label}排序`">⠿</span>
+                    </td>
+                    <td class="layout-center">{{ index + 1 }}</td>
+                    <td>{{ element.label }}</td>
+                    <td class="layout-center">
+                      <el-switch
+                        v-model="element.commonVisible"
+                        size="small"
+                        :aria-label="`${element.label}常用区显示`"
+                      />
+                    </td>
+                    <td>{{ operatorLabels[element.defaultOperator] }}</td>
+                  </tr>
+                </template>
+              </draggable>
+            </table>
+          </div>
           <el-empty v-if="!layoutFields.length" description="请先开放主表查询字段" />
         </el-tab-pane>
         <el-tab-pane label="查询预览" name="preview">
-          <el-alert title="预览需要同时拥有该业务列表权限；预览不会改变已发布配置。" :closable="false" />
           <el-alert
             v-if="!checkPermi(['query:definition:preview'])"
             title="当前账号没有查询预览权限。"
@@ -131,11 +171,12 @@
               <el-table-column
                 v-for="field in previewColumns"
                 :key="field.fieldKey"
-                :prop="field.fieldKey"
                 :label="field.label"
                 min-width="160"
                 show-overflow-tooltip
-              />
+              >
+                <template #default="{ row }">{{ formatPreviewValue(field.fieldKey, row[field.fieldKey]) }}</template>
+              </el-table-column>
             </el-table>
             <el-empty v-else description="查询配置已加载，当前条件下没有数据" />
           </template>
@@ -246,6 +287,7 @@ import type {
   DefinitionDetail,
   DraftField,
   QueryMetadata,
+  QueryOption,
   QueryRelease,
   QuerySelection
 } from '@/types/api/system/query'
@@ -264,6 +306,28 @@ const layoutFields = computed({
       .sort((a, b) => a.displayOrder - b.displayOrder || a.fieldKey.localeCompare(b.fieldKey)) || [],
   set: (ordered: DraftField[]) => ordered.forEach((field, index) => (field.displayOrder = index + 1))
 })
+const fieldSearch = ref(''),
+  fieldPage = ref(1),
+  fieldPageSize = ref(20)
+const filteredFields = computed(() => {
+  const keyword = fieldSearch.value.trim().toLocaleLowerCase()
+  if (!keyword) return detail.value?.fields || []
+  return (
+    detail.value?.fields.filter(
+      (field) =>
+        field.label.toLocaleLowerCase().includes(keyword) || field.fieldKey.toLocaleLowerCase().includes(keyword)
+    ) || []
+  )
+})
+const pagedFields = computed(() => {
+  const start = (fieldPage.value - 1) * fieldPageSize.value
+  return filteredFields.value.slice(start, start + fieldPageSize.value)
+})
+watch([fieldSearch, fieldPageSize], () => (fieldPage.value = 1))
+watch(
+  () => filteredFields.value.length,
+  (total) => (fieldPage.value = Math.min(fieldPage.value, Math.max(1, Math.ceil(total / fieldPageSize.value))))
+)
 watch(tab, (value) => {
   if (
     value === 'preview' &&
@@ -321,7 +385,8 @@ const previewMetadata = ref<QueryMetadata>(),
   previewTotal = ref(0),
   previewLoading = ref(false),
   previewError = ref(''),
-  previewSelection = ref<QuerySelection>({ values: {} })
+  previewSelection = ref<QuerySelection>({ values: {} }),
+  previewOptionLabels = ref<Record<string, Record<string, string>>>({})
 let previewSequence = 0
 async function preview(selection: QuerySelection = { values: {} }) {
   if (dirty.value || !checkPermi(['query:definition:preview'])) return
@@ -335,16 +400,62 @@ async function preview(selection: QuerySelection = { values: {} }) {
       : { pageNum: 1, pageSize: 20, configVersion: 0 }
     const { data } = await api.previewQuery(id, request)
     if (current !== previewSequence) return
+    const optionLabels = await resolvePreviewOptionLabels(data.metadata, data.result.rows)
+    if (current !== previewSequence) return
     previewMetadata.value = data.metadata
     previewRows.value = data.result.rows
     previewTotal.value = data.result.total
     previewSelection.value = selection
+    previewOptionLabels.value = optionLabels
     tab.value = 'preview'
   } catch {
     if (current === previewSequence) previewError.value = '预览失败，请检查业务列表权限或草稿配置后重试。'
   } finally {
     if (current === previewSequence) previewLoading.value = false
   }
+}
+const referenceProviders = new Set(['categories', 'units', 'suppliers', 'items'])
+async function resolvePreviewOptionLabels(
+  metadata: QueryMetadata,
+  rows: Record<string, unknown>[]
+): Promise<Record<string, Record<string, string>>> {
+  const firstRow = rows[0]
+  if (!firstRow) return {}
+  const configured = metadata.fields
+    .filter((field) => field.sourceKey === 'main' && field.fieldKey in firstRow)
+    .map((field) => field.fieldKey)
+  const visibleKeys = new Set([...new Set([...configured, ...Object.keys(firstRow)])].slice(0, 10))
+  const fields = metadata.fields.filter((field) => visibleKeys.has(field.fieldKey) && field.optionProvider)
+  const entries: Array<[string, Record<string, string>]> = await Promise.all(
+    fields.map(async (field) => {
+      try {
+        const values = [
+          ...new Set(rows.map((row) => row[field.fieldKey]).filter((value) => value !== null && value !== undefined))
+        ]
+        let options: QueryOption[]
+        if (referenceProviders.has(field.optionProvider)) {
+          const ids = values
+            .map((value) => {
+              const id = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
+              return Number.isSafeInteger(id) && id > 0 ? id : undefined
+            })
+            .filter((value): value is number => value !== undefined)
+          if (!ids.length) return [field.fieldKey, {}]
+          options = (await api.getQueryOptions(metadata.queryKey, field.fieldKey, '', 1, ids, id)).data.rows
+        } else {
+          options = (await api.getQueryOptions(metadata.queryKey, field.fieldKey, '', 1, undefined, id)).data.rows
+        }
+        return [field.fieldKey, Object.fromEntries(options.map((option) => [String(option.value), option.label]))]
+      } catch {
+        return [field.fieldKey, {}]
+      }
+    })
+  )
+  return Object.fromEntries(entries)
+}
+function formatPreviewValue(fieldKey: string, value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—'
+  return previewOptionLabels.value[fieldKey]?.[String(value)] ?? String(value)
 }
 const previewColumns = computed(() => {
   const row = previewRows.value[0]
@@ -544,23 +655,74 @@ onMounted(() => void load())
 .field-table {
   margin-top: 16px;
 }
-.layout-list {
-  margin-top: 16px;
-  border: 1px solid var(--el-border-color);
-}
-.layout-row {
+.field-toolbar {
   display: flex;
   align-items: center;
-  gap: 24px;
-  min-height: 54px;
-  padding: 8px 16px;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.field-search-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.layout-list {
+  margin-top: 16px;
+  max-height: 560px;
+  overflow: auto;
+  border: 1px solid var(--el-border-color-lighter);
+}
+.layout-table {
+  width: 100%;
+  min-width: 720px;
+  table-layout: fixed;
+  border-spacing: 0;
+  color: var(--el-text-color-regular);
+  font-size: var(--el-font-size-base);
+}
+.layout-table th,
+.layout-table td {
+  box-sizing: border-box;
+  height: 44px;
+  padding: 6px 12px;
+  line-height: 22px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  border-right: 1px solid var(--el-border-color-lighter);
   border-bottom: 1px solid var(--el-border-color-lighter);
 }
-.layout-name {
-  flex: 1;
+.layout-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--el-fill-color-light);
+  font-weight: 600;
+  white-space: nowrap;
 }
-.layout-operator {
-  min-width: 130px;
+.layout-table .layout-center {
+  text-align: center;
+}
+.layout-table th:last-child,
+.layout-table td:last-child {
+  border-right: 0;
+}
+.layout-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.layout-table tbody tr:hover {
+  background: var(--el-fill-color-light);
+}
+.query-pagination {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
 }
 .drag-handle {
   cursor: grab;

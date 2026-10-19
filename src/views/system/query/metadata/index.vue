@@ -1,20 +1,42 @@
 <template>
   <div class="app-container" v-loading="loading">
+    <el-form :inline="true" @submit.prevent="handleQuery">
+      <el-form-item label="名称 / 表名">
+        <el-input
+          v-model="tableKeyword"
+          clearable
+          maxlength="200"
+          placeholder="查询中文名称或数据库表名"
+          style="width: 280px"
+        />
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" native-type="submit">查询</el-button>
+        <el-button @click="resetQuery">重置</el-button>
+      </el-form-item>
+    </el-form>
     <div class="toolbar">
-      <span>数据目录仅维护查询元数据，不修改业务表结构。</span>
+      <span>共 {{ total }} 个数据表</span>
       <div>
         <el-button v-hasPermi="['query:metadata:import']" type="primary" @click="openImport">导入业务表</el-button>
-        <el-button @click="load">刷新</el-button>
+        <el-button @click="load()">刷新</el-button>
       </div>
     </div>
-    <vxe-table :data="tables" border stripe :column-config="{ resizable: true }" @cell-click="selectTable">
+    <vxe-table :data="tables" border stripe :column-config="{ resizable: true }">
       <vxe-column field="displayName" title="中文名称" min-width="160" />
       <vxe-column field="tableName" title="数据库表名" min-width="210" />
       <vxe-column field="available" title="状态" width="100">
         <template #default="{ row }">{{ row.available ? '可用' : '失效' }}</template>
       </vxe-column>
+      <vxe-column field="queryRegistered" title="查询接入" width="140">
+        <template #default="{ row }">
+          <el-tag :type="row.queryRegistered ? 'success' : 'info'">
+            {{ row.queryRegistered ? '已接入查询' : '未接入查询' }}
+          </el-tag>
+        </template>
+      </vxe-column>
       <vxe-column field="synchronizedTime" title="同步时间" width="200" />
-      <vxe-column title="操作" width="340">
+      <vxe-column title="操作" width="220">
         <template #default="{ row }">
           <template v-if="checkPermi(['query:definition:list'])">
             <el-button
@@ -36,42 +58,37 @@
               </template>
             </el-dropdown>
           </template>
-          <el-button link type="primary" @click.stop="showColumns(row)">字段</el-button>
-          <el-button v-hasPermi="['query:metadata:edit']" link @click.stop="rename(row)">修改名称</el-button>
           <el-button v-hasPermi="['query:metadata:sync']" link type="primary" @click.stop="showSync(row)">
             预览同步
           </el-button>
         </template>
       </vxe-column>
+      <template #empty><el-empty description="没有符合条件的数据表" :image-size="70" /></template>
     </vxe-table>
-    <template v-if="selected">
-      <el-divider content-position="left">{{ selected.displayName }} · 字段目录</el-divider>
-      <vxe-table :data="columns" border stripe max-height="500" :column-config="{ resizable: true }">
-        <vxe-column field="displayName" title="显示名称" min-width="180" />
-        <vxe-column field="columnName" title="字段名" min-width="170" />
-        <vxe-column field="columnType" title="数据库类型" width="160" />
-        <vxe-column title="查询类型" width="130">
-          <template #default="{ row }">{{ dataTypeLabels[row.dataType] || row.dataType }}</template>
-        </vxe-column>
-        <vxe-column title="状态" width="100">
-          <template #default="{ row }">{{ row.available ? '可用' : '失效' }}</template>
-        </vxe-column>
-        <vxe-column title="操作" width="120">
-          <template #default="{ row }">
-            <el-button v-hasPermi="['query:metadata:edit']" link @click="rename(selected!, row)">修改名称</el-button>
-          </template>
-        </vxe-column>
-      </vxe-table>
-    </template>
+    <el-pagination
+      v-model:current-page="pagination.pageNum"
+      v-model:page-size="pagination.pageSize"
+      class="query-pagination"
+      background
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="total"
+      :page-sizes="[10, 20, 50, 100]"
+      :disabled="loading"
+      @change="changePage"
+    />
     <el-dialog v-model="importOpen" title="导入业务表" width="600px">
       <el-select v-model="importName" filterable placeholder="选择已登记业务表" style="width: 100%">
         <el-option
           v-for="table in candidates"
           :key="table.tableName"
-          :label="`${table.tableComment}（${table.tableName}）`"
+          :label="`${table.displayName}（${table.tableName}）${table.imported ? ' · 已导入' : ''}`"
           :value="table.tableName"
+          :disabled="table.imported"
         />
       </el-select>
+      <p v-if="candidates.length && candidates.every((table) => table.imported)">
+        <el-text type="info">已登记业务表均已导入，字段变化请使用“预览同步”。</el-text>
+      </p>
       <template #footer>
         <el-button @click="importOpen = false">取消</el-button>
         <el-button type="primary" :disabled="!importName" :loading="saving" @click="importTable">导入</el-button>
@@ -103,80 +120,86 @@
 <script setup lang="ts" name="QueryMetadataCatalog">
 import { useVxe } from '@/plugins/vxe'
 useVxe()
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import * as api from '@/api/system/query'
 import { checkPermi } from '@/utils/permission'
-import type { MetadataTable, MetadataColumn, QueryDefinitionLink, SyncPreview } from '@/types/api/system/query'
+import type {
+  MetadataTable,
+  MetadataTableRow,
+  MetadataCandidate,
+  MetadataTableQuery,
+  QueryDefinitionLink,
+  SyncPreview
+} from '@/types/api/system/query'
 const router = useRouter()
-const dataTypeLabels: Record<string, string> = {
-  STRING: '文本',
-  INTEGER: '整数',
-  DECIMAL: '小数',
-  BOOLEAN: '是／否',
-  DATE: '日期',
-  DATETIME: '日期时间',
-  UNSUPPORTED: '暂不支持'
-}
-const tables = ref<MetadataTable[]>([]),
-  columns = ref<MetadataColumn[]>([]),
-  selected = ref<MetadataTable>(),
-  definitionLinks = ref<QueryDefinitionLink[]>([])
+const tables = ref<MetadataTableRow[]>([]),
+  definitionLinks = ref<QueryDefinitionLink[]>([]),
+  tableKeyword = ref(''),
+  total = ref(0),
+  appliedQuery = ref<MetadataTableQuery>({ pageNum: 1, pageSize: 20 })
+const pagination = reactive({ pageNum: 1, pageSize: 20 })
 const loading = ref(false),
   saving = ref(false),
   importOpen = ref(false),
   syncOpen = ref(false),
   importName = ref('')
-const candidates = ref<{ tableName: string; tableComment: string }[]>([]),
+const candidates = ref<MetadataCandidate[]>([]),
   syncPreview = ref<SyncPreview>(),
   syncTable = ref<MetadataTable>()
-let sequence = 0,
-  columnsSequence = 0
-async function load() {
+let sequence = 0
+async function load(query: MetadataTableQuery = appliedQuery.value) {
+  const requested = { ...query }
   const current = ++sequence
   loading.value = true
   try {
-    const { data } = await api.getMetadataTables()
+    const { data } = await api.getMetadataTables(requested)
     if (current !== sequence) return
-    tables.value = data
-    if (checkPermi(['query:definition:list'])) {
+    const lastPage = Math.max(1, Math.ceil(data.total / requested.pageSize))
+    if (requested.pageNum > lastPage) {
+      await load({ ...requested, pageNum: lastPage })
+      return
+    }
+    let links = definitionLinks.value.filter((link) => data.rows.some((row) => row.tableId === link.tableId))
+    if (checkPermi(['query:definition:list']) && data.rows.length) {
       try {
-        const links = (await api.getMetadataDefinitionLinks()).data
-        if (current === sequence) definitionLinks.value = links
+        links = (await api.getMetadataDefinitionLinks(data.rows.map((row) => row.tableId))).data
       } catch {
         /* 保留上次查询配置入口。 */
       }
     }
-    if (selected.value) {
-      selected.value = data.find((t) => t.tableId === selected.value?.tableId)
-      if (selected.value) await showColumns(selected.value)
-    }
+    if (current !== sequence) return
+    tables.value = data.rows
+    total.value = data.total
+    definitionLinks.value = links
+    appliedQuery.value = requested
+    tableKeyword.value = requested.keyword || ''
+    Object.assign(pagination, { pageNum: requested.pageNum, pageSize: requested.pageSize })
   } catch {
-    /* 保留上次结果。 */
+    if (current !== sequence) return
+    tableKeyword.value = appliedQuery.value.keyword || ''
+    Object.assign(pagination, { pageNum: appliedQuery.value.pageNum, pageSize: appliedQuery.value.pageSize })
+    /* 保留上次成功结果及其查询条件。 */
   } finally {
     if (current === sequence) loading.value = false
   }
+}
+function handleQuery() {
+  void load({ ...appliedQuery.value, pageNum: 1, keyword: tableKeyword.value.trim() || undefined })
+}
+function resetQuery() {
+  tableKeyword.value = ''
+  void load({ pageNum: 1, pageSize: appliedQuery.value.pageSize })
+}
+function changePage(pageNum: number, pageSize: number) {
+  void load({ ...appliedQuery.value, pageNum: pageSize !== appliedQuery.value.pageSize ? 1 : pageNum, pageSize })
 }
 function linksFor(table: MetadataTable): QueryDefinitionLink[] {
   return definitionLinks.value.filter((link) => link.tableId === table.tableId)
 }
 function openDefinition(link: QueryDefinitionLink) {
   void router.push(`/query-definition/${link.definitionId}`)
-}
-async function showColumns(table: MetadataTable) {
-  const current = ++columnsSequence
-  try {
-    const { data } = await api.getMetadataColumns(table.tableId)
-    if (current !== columnsSequence) return
-    selected.value = table
-    columns.value = data
-  } catch {
-    /* 保留字段列表。 */
-  }
-}
-function selectTable({ row }: { row: MetadataTable }) {
-  void showColumns(row)
 }
 async function openImport() {
   try {
@@ -198,18 +221,6 @@ async function importTable() {
     /* 保留选择。 */
   } finally {
     saving.value = false
-  }
-}
-async function rename(table: MetadataTable, column?: MetadataColumn) {
-  try {
-    const result = await ElMessageBox.prompt('请输入中文显示名称', '修改名称', {
-      inputValue: column?.displayName || table.displayName,
-      inputValidator: (v: string) => Boolean(v?.trim() && v.trim().length <= 100) || '请输入 1～100 个字符'
-    })
-    await api.renameMetadata(table.tableId, table.version, result.value, column?.columnId)
-    await load()
-  } catch {
-    /* 取消或失败保留数据。 */
   }
 }
 async function showSync(table: MetadataTable) {
@@ -255,5 +266,13 @@ onMounted(() => void load())
   margin-bottom: 16px;
   color: var(--el-text-color-secondary);
   font-size: 13px;
+  flex-wrap: wrap;
+}
+.query-pagination {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
 }
 </style>
