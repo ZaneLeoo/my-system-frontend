@@ -175,6 +175,26 @@ export const dynamicRoutes = [
     ]
   },
   {
+    path: '/signing-document',
+    component: Layout,
+    hidden: true,
+    permissions: ['signing:task:query', 'signing:task:start', 'signing:template:edit'],
+    children: [
+      {
+        path: '/signing/task/create',
+        component: () => import('@/views/signing/task/editor.vue'),
+        name: 'SigningTaskCreate',
+        meta: { title: '发起电子签署', activeMenu: '/signing/task', noCache: true }
+      },
+      {
+        path: '/signing/task/:id',
+        component: () => import('@/views/signing/task/editor.vue'),
+        name: 'SigningTaskDetail',
+        meta: { title: '电子签署详情', activeMenu: '/signing/task', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/purchase/order-document',
     component: Layout,
     hidden: true,
